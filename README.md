@@ -2,8 +2,7 @@
 
 A browser-playable 2D game with 2.5D depth effects using Phaser 3, TypeScript, and Vite.
 
-## Features
-
+## Featurespush
 - **2.5D Depth Sorting**: Objects are sorted by their Y position to create depth illusion
 - **Parallax Scrolling**: Multiple background layers moving at different speeds
 - **Smooth Player Movement**: Arrow keys or WASD controls
