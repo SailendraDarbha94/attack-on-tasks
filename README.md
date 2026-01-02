@@ -1,15 +1,38 @@
-# 2.5D Phaser Game
+# ⚔️ Attack on Tasks
 
-A browser-playable 2D game with 2.5D depth effects using Phaser 3, TypeScript, and Vite.
+A browser-playable 2.5D action game where you fight **Titans** representing your bad habits! Built with Phaser 3, TypeScript, and Vite.
 
-## Featurespush
-- **2.5D Depth Sorting**: Objects are sorted by their Y position to create depth illusion
-- **Parallax Scrolling**: Multiple background layers moving at different speeds
-- **Smooth Player Movement**: Arrow keys or WASD controls
-- **Camera Following**: Camera smoothly follows the player
-- **Interactive Obstacles**: Walk behind and in front of trees to see depth sorting in action
+## 🎮 Game Features
 
-## Installation & Setup
+### Combat System
+- **Attack** (SPACE): Lunge attack with directional hitbox detection
+- **Dodge** (SHIFT): Quick dodge roll with invulnerability frames
+- **Health & Energy**: Manage your resources strategically
+
+### Titans (Bad Habit Enemies)
+Each titan represents a bad habit you're fighting against:
+- 🚬 **Smoke Titan** - The grey menace of nicotine
+- 🍺 **Drink Titan** - The brown beast of alcohol
+- 😴 **Sleep Titan** - The purple sloth of oversleeping  
+- 🍔 **Junk Titan** - The orange glutton of unhealthy eating
+- 🐢 **Lazy Titan** - The dark demon of procrastination
+- 👹 **Habit Colossus** - The final boss (all habits combined!)
+
+### 5 Levels
+1. **The First Battle** - Tutorial level
+2. **Smoke District** - Clear the smoky haze
+3. **Tavern of Temptation** - Face the allure of drinks
+4. **The Feast Grounds** - Resist unhealthy eating
+5. **The Final Stand** - Boss fight against the Habit Colossus!
+
+### Visual Features
+- **2.5D Depth Sorting**: Dynamic sprite ordering based on Y-position
+- **Parallax Scrolling**: Multi-layer backgrounds for depth perception
+- **Particle Effects**: Combat feedback and visual polish
+- **Screen Shake**: Impactful combat feel
+- **Animated UI**: Smooth transitions and notifications
+
+## 🚀 Installation & Setup
 
 1. Install dependencies:
 ```bash
@@ -21,77 +44,75 @@ npm install
 npm run dev
 ```
 
-3. Open your browser and navigate to `http://localhost:3000`
+3. Open your browser to `http://localhost:5173`
 
-## Controls
+## 🎯 Controls
 
-- **Arrow Keys** or **WASD**: Move the player character
-- Walk around the trees to see the 2.5D depth sorting effect in action!
+| Key | Action |
+|-----|--------|
+| WASD / Arrow Keys | Move |
+| SPACE | Attack |
+| SHIFT | Dodge/Roll |
+| ENTER | Continue/Retry |
+| ESC | Return to Menu |
 
-## Build for Production
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
-├── main.ts          # Game initialization and configuration
-├── GameScene.ts     # Main game scene with parallax and depth sorting
-└── Player.ts        # Player character with movement controls
+├── main.ts              # Game initialization
+├── PreloaderScene.ts    # Asset loading with progress bar
+├── MainMenuScene.ts     # Title screen and level select
+├── GameScene.ts         # Main gameplay
+├── Player.ts            # Player with combat abilities
+├── Titan.ts             # Enemy AI and behavior
+├── UIManager.ts         # HUD and notifications
+└── LevelConfig.ts       # Level definitions
 
-assets/              # Replace placeholder assets with your own
-├── player.png       # Player sprite (recommended: 32x48px)
-├── tree.png         # Obstacle sprite (recommended: 40x80px)
-├── far-bg.png       # Far background tile (recommended: 64x64px)
-└── near-bg.png      # Near background tile (recommended: 128x128px)
+assets/
+├── player-sprite.png    # Player character sprite
+├── titan.png            # Titan enemy sprite
+├── background.png       # Game background
+├── tileset.png          # Environment tiles
+└── ui-elements.png      # UI graphics
 ```
 
-## 2.5D Techniques Used
+## 🎨 Game Mechanics
 
-### Depth Sorting
-- All sprites have their depth updated based on their Y position
-- Higher Y values (lower on screen) = higher depth (appear in front)
-- This creates the illusion that objects further "down" are closer to the camera
+### Depth Sorting (2.5D Effect)
+All sprites have their render depth updated each frame based on their Y position:
+- Higher Y = appears in front (closer to camera)
+- Creates illusion of walking behind/in front of objects
 
 ### Parallax Scrolling
-- **Far Background**: Moves at 0.1x camera speed (very slow)
-- **Near Background**: Moves at 0.3x camera speed (medium)
-- **Game Objects**: Move at 1.0x camera speed (normal)
-- This creates depth perception through motion
+- **Far layer**: Moves at 0.1x camera speed
+- **Near layer**: Moves at 0.3x camera speed
+- **Game objects**: Move at 1.0x camera speed
 
-## Customization
+### Combat
+- Attacks have directional hitboxes
+- Titans have health bars and aggressive behavior
+- Dodge grants temporary invulnerability
+- Energy regenerates over time
 
-### Replace Placeholder Assets
-The game currently uses colored rectangles as placeholders. Replace them with actual sprites:
+## 🛠️ Technologies
 
-1. Add your sprite files to the `assets/` directory
-2. Update the `preload()` method in `GameScene.ts` to load your assets:
-```typescript
-this.load.image('player', 'assets/player.png');
-this.load.image('tree', 'assets/tree.png');
-```
+- **Phaser 3** - Game engine
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Fast development and building
 
-### Add More Game Objects
-To add more objects with depth sorting:
-1. Create the sprite in `GameScene.create()`
-2. Add it to the `gameObjects` array
-3. The depth sorting will be handled automatically
+## 🏆 Tips
 
-### Adjust Parallax Speeds
-Modify the multipliers in `GameScene.update()`:
-```typescript
-// Slower = further away, faster = closer
-this.farBackground.tilePositionX = camera.scrollX * 0.1;  // Very far
-this.nearBackground.tilePositionX = camera.scrollX * 0.5; // Closer
-```
+1. **Manage Energy**: Don't spam attacks, let energy regenerate
+2. **Use Dodge**: Invulnerability frames can save you
+3. **Hit and Run**: Attack then dodge away
+4. **Prioritize**: Take out smaller titans before the boss
+5. **Stay Mobile**: Standing still makes you an easy target
 
-## Technologies Used
+## 📜 License
 
-- **Phaser 3**: Game engine
-- **TypeScript**: Type-safe JavaScript
-- **Vite**: Fast development server and build tool
+MIT License - Feel free to use and modify!
+
+---
+
+*Conquer your habits, one Titan at a time!* ⚔️
