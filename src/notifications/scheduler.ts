@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
+import { lineForSlot } from '@/content/notifications';
 import { notificationTimes } from '@/engine/schedule';
 import type { ScheduleSettings } from '@/engine/types';
 
@@ -32,8 +33,7 @@ export async function refreshNotificationSchedule(settings: ScheduleSettings): P
     times.map((slotTs) =>
       Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Titans emerge from the treeline',
-          body: 'They are waiting between the trunks. Face them.',
+          ...lineForSlot(slotTs),
           sound: true,
           data: { slotTs },
         },

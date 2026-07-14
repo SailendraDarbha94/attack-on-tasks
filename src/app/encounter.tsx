@@ -79,7 +79,11 @@ export default function EncounterScreen() {
       <SafeAreaView style={styles.screen}>
         <View style={styles.stage}>
           <Animated.View style={figureStyle}>
-            <TitanFigure habit={result.habit} height={210} />
+            <TitanFigure
+              habit={result.habit}
+              pose={result.answer === 'no' ? 'flinch' : 'grown'}
+              height={230}
+            />
           </Animated.View>
           <Animated.View pointerEvents="none" style={[styles.flash, flashStyle]} />
         </View>
@@ -136,7 +140,7 @@ export default function EncounterScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.stage}>
-        <TitanFigure habit={current.habit} height={210} />
+        <TitanFigure habit={current.habit} height={230} />
       </View>
       <Text style={styles.name}>{def.name}</Text>
       {lingering && (

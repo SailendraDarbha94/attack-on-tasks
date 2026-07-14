@@ -9,8 +9,8 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B120E",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.sailendradarbha.attackontasks",
+      "appleTeamId": "VT4A9ETST9",
       "supportsTablet": false
     },
     "android": {

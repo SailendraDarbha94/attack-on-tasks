@@ -10,6 +10,7 @@ import {
   notificationTimes,
   pendingEncounters,
   slotsBetween,
+  variantIndex,
 } from './schedule';
 import type { GameEvent, ScheduleSettings } from './types';
 
@@ -149,6 +150,24 @@ describe('notificationTimes', () => {
       habitsEnabled: { smoke: false, drink: false },
     };
     expect(notificationTimes(at(0, 8), s)).toEqual([]);
+  });
+});
+
+describe('variantIndex', () => {
+  it('is deterministic and in range', () => {
+    for (const slot of [at(0, 9), at(0, 12), at(3, 21), at(30, 15)]) {
+      const i = variantIndex(slot, 14);
+      expect(i).toBe(variantIndex(slot, 14));
+      expect(i).toBeGreaterThanOrEqual(0);
+      expect(i).toBeLessThan(14);
+    }
+  });
+
+  it('spreads across a week of default slots instead of repeating one line', () => {
+    const slots = slotsBetween(at(0, 0), at(6, 23, 59), DEFAULT_SETTINGS);
+    const seen = new Set(slots.map((s) => variantIndex(s, 14)));
+    expect(slots.length).toBe(35);
+    expect(seen.size).toBeGreaterThanOrEqual(8);
   });
 });
 

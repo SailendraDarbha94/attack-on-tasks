@@ -106,7 +106,7 @@ function TitanCard({ titan }: { titan: TitanState }) {
   return (
     <View style={[styles.card, !titan.alive && styles.cardSlain]}>
       <Animated.View style={titan.alive ? breathing : undefined}>
-        <TitanFigure habit={titan.habit} height={86} />
+        <TitanFigure habit={titan.habit} pose={titan.alive ? 'idle' : 'dying'} height={96} />
       </Animated.View>
       <View style={styles.cardBody}>
         <Text style={styles.name}>{def.name}</Text>

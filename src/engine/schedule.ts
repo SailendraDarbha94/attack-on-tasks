@@ -104,6 +104,16 @@ export function nextSlot(nowTs: number, s: ScheduleSettings): number | null {
   return slotsBetween(nowTs + 1, nowTs + 48 * HOUR, s)[0] ?? null;
 }
 
+// Deterministic variant picker: the same slot always gets the same index,
+// so rescheduling churn never shuffles copy mid-day.
+export function variantIndex(seed: number, count: number): number {
+  let h = Math.trunc(seed / 60_000) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h ^= h >>> 16;
+  return h % count;
+}
+
 // Rolling local-notification schedule. iOS caps pending notifications at 64,
 // so we schedule a bounded horizon and refresh on every app open.
 export function notificationTimes(
