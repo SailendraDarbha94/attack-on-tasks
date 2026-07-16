@@ -19,6 +19,7 @@ describe('battleStats', () => {
       relapses: 1,
       expired: 1,
       slain: 1,
+      choresDone: 1,
     });
   });
 
@@ -29,6 +30,7 @@ describe('battleStats', () => {
       relapses: 0,
       expired: 0,
       slain: 0,
+      choresDone: 0,
     });
   });
 });

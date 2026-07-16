@@ -15,8 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TitanFigure } from '@/components/TitanFigure';
 import { palette, spacing } from '@/constants/theme';
 import { TITANS } from '@/content/titans';
+import { choreTitans, type ChoreTitanState } from '@/engine/chores';
 import { nextSlot } from '@/engine/schedule';
-import { MAX_SIZE } from '@/engine/titanMath';
+import { MAX_SIZE, XP_CHORE } from '@/engine/titanMath';
 import type { Answer, HabitId, TitanState } from '@/engine/types';
 import { useGame } from '@/state/game';
 
@@ -31,10 +32,10 @@ const formatClock = (ts: number) =>
   new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 export default function ForestScreen() {
-  const { game, pending, settings, hydrated } = useGame();
+  const { game, pending, settings, hydrated, chores, events } = useGame();
   const [now, setNow] = useState(() => Date.now());
   const [cardHabit, setCardHabit] = useState<HabitId | null>(null);
-  const [wallNote, setWallNote] = useState(false);
+  const [cardChoreId, setCardChoreId] = useState<number | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
@@ -42,6 +43,9 @@ export default function ForestScreen() {
   }, []);
 
   const upcoming = nextSlot(now, settings);
+  const dueChores = choreTitans(chores, events, now).filter((c) => c.due);
+  const roamingChores = dueChores.slice(0, 4);
+  const hiddenChores = dueChores.length - roamingChores.length;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -76,10 +80,21 @@ export default function ForestScreen() {
           />
         ))}
 
+        {roamingChores.map((state, i) => (
+          <RoamingChore
+            key={state.chore.id}
+            state={state}
+            slot={i}
+            onPress={() => setCardChoreId(state.chore.id)}
+          />
+        ))}
+
         <View style={styles.controls}>
-          <Pressable style={styles.controlBtn} onPress={() => setWallNote(true)} hitSlop={8}>
-            <Text style={styles.controlGlyph}>＋</Text>
-          </Pressable>
+          <Link href="/add-titan" asChild>
+            <Pressable style={styles.controlBtn} hitSlop={8}>
+              <Text style={styles.controlGlyph}>＋</Text>
+            </Pressable>
+          </Link>
           <Link href="/profile" asChild>
             <Pressable style={styles.controlBtn} hitSlop={8}>
               <Text style={styles.controlGlyph}>⚔</Text>
@@ -92,12 +107,10 @@ export default function ForestScreen() {
           </Link>
         </View>
 
-        {wallNote && (
-          <Pressable style={styles.wallNote} onPress={() => setWallNote(false)}>
-            <Text style={styles.wallNoteText}>
-              Lesser Titans arrive with the next expedition. The walls aren't ready.
-            </Text>
-          </Pressable>
+        {hiddenChores > 0 && (
+          <Text style={styles.hiddenChores}>
+            +{hiddenChores} more stir beyond the treeline
+          </Text>
         )}
       </View>
 
@@ -115,6 +128,7 @@ export default function ForestScreen() {
       </View>
 
       <TitanCardModal habit={cardHabit} onClose={() => setCardHabit(null)} />
+      <ChoreCardModal choreId={cardChoreId} onClose={() => setCardChoreId(null)} />
     </SafeAreaView>
   );
 }
@@ -169,6 +183,146 @@ function RoamingTitan({
         <TitanFigure habit={titan.habit} pose={titan.alive ? 'idle' : 'dying'} height={height} />
       </Pressable>
     </Animated.View>
+  );
+}
+
+// ── a due chore stalking the clearing, smaller than the bosses ────────────
+const CHORE_SLOTS = [
+  { left: '34%' as const, bottom: 0 },
+  { left: '14%' as const, bottom: 104 },
+  { right: '30%' as const, bottom: 118 },
+  { left: '48%' as const, bottom: 156 },
+];
+
+function RoamingChore({
+  state,
+  slot,
+  onPress,
+}: {
+  state: ChoreTitanState;
+  slot: number;
+  onPress: () => void;
+}) {
+  const sway = useSharedValue(0);
+
+  useEffect(() => {
+    sway.value = withRepeat(
+      withTiming(slot % 2 === 0 ? -8 : 8, {
+        duration: 4200 + slot * 700,
+        easing: Easing.inOut(Easing.quad),
+      }),
+      -1,
+      true,
+    );
+  }, [sway, slot]);
+
+  const roam = useAnimatedStyle(() => ({
+    transform: [{ translateX: sway.value }],
+  }));
+
+  // undone work looms a little larger each day, but never becomes a boss
+  const height = 84 + Math.round(state.menace * 56);
+
+  return (
+    <Animated.View style={[styles.roamer, CHORE_SLOTS[slot] ?? CHORE_SLOTS[0], roam]}>
+      <Pressable onPress={onPress} hitSlop={6}>
+        <TitanFigure habit="chore" height={height} />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+// ── the chore card: ⊗ not today · ⓘ details · ✓ done ─────────────────────
+function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose: () => void }) {
+  const { chores, events, completeChore, skipChore, releaseChore } = useGame();
+  const [showDetails, setShowDetails] = useState(false);
+  const [verdict, setVerdict] = useState<'done' | 'skip' | null>(null);
+
+  useEffect(() => {
+    setShowDetails(false);
+    setVerdict(null);
+  }, [choreId]);
+
+  if (choreId == null) return null;
+  const state = choreTitans(chores, events, Date.now()).find((c) => c.chore.id === choreId);
+  if (!state) return null;
+  const { chore } = state;
+
+  const onDone = async () => {
+    await completeChore(chore.id);
+    setVerdict('done');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  };
+
+  const onSkip = async () => {
+    await skipChore(chore.id);
+    setVerdict('skip');
+    Haptics.selectionAsync();
+  };
+
+  const onRelease = async () => {
+    await releaseChore(chore.id);
+    onClose();
+  };
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.card} onPress={() => {}}>
+          <Text style={styles.cardName}>{chore.name.toUpperCase()}</Text>
+          <Text style={styles.choreKind}>LESSER TITAN</Text>
+          <View style={styles.cardStage}>
+            <TitanFigure habit="chore" pose={verdict === 'done' ? 'dying' : 'idle'} height={170} />
+          </View>
+
+          {verdict === 'done' ? (
+            <Text style={[styles.verdict, { color: palette.steel }]}>
+              Your blades flash. The work is done — it crumbles to steam. +{XP_CHORE} XP.
+            </Text>
+          ) : verdict === 'skip' ? (
+            <Text style={styles.cardEpithet}>
+              It lumbers off into the trees, unhurt. It will return tomorrow.
+            </Text>
+          ) : (
+            <Text style={styles.cardEpithet}>
+              {state.overdueDays > 0
+                ? `It has fattened on ${state.overdueDays} ${state.overdueDays === 1 ? 'day' : 'days'} of undone work.`
+                : 'It stirs in the clearing, waiting on the work.'}
+            </Text>
+          )}
+
+          {showDetails && !verdict && (
+            <View style={styles.details}>
+              <Text style={styles.detailMeta}>
+                Returns every {chore.frequencyHours / 24 === 7 ? 'week' : `${chore.frequencyHours / 24} day(s)`}{' '}
+                once slain. Killing it sharpens your blades against the bosses.
+              </Text>
+              <Pressable onPress={onRelease} hitSlop={6}>
+                <Text style={styles.release}>RELEASE THIS TITAN (remove the task)</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {!verdict ? (
+            <View style={styles.reportRow}>
+              <ReportButton glyph="⊗" label="NOT TODAY" tone="dim" disabled={false} onPress={onSkip} />
+              <ReportButton
+                glyph="ⓘ"
+                label="DETAILS"
+                tone="dim"
+                disabled={false}
+                onPress={() => setShowDetails((v) => !v)}
+              />
+              <ReportButton glyph="✓" label="DONE" tone="steel" disabled={false} onPress={onDone} />
+            </View>
+          ) : (
+            <Pressable style={styles.closeCta} onPress={onClose}>
+              <Text style={styles.closeCtaText}>LEAVE THE CLEARING</Text>
+            </Pressable>
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -396,22 +550,26 @@ const styles = StyleSheet.create({
     color: palette.steel,
     fontSize: 18,
   },
-  wallNote: {
+  hiddenChores: {
     position: 'absolute',
-    left: 52,
-    top: 190,
-    right: spacing.lg,
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: spacing.md,
-    zIndex: 4,
-  },
-  wallNoteText: {
+    bottom: 0,
+    alignSelf: 'center',
     color: palette.textDim,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  choreKind: {
+    color: palette.textDim,
+    fontSize: 10,
+    letterSpacing: 2,
+    fontWeight: '700',
+  },
+  release: {
+    color: palette.blood,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: spacing.xs,
   },
   footer: {
     alignItems: 'center',

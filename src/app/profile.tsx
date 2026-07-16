@@ -38,6 +38,7 @@ export default function ProfileScreen() {
         <Stat label="STRIKES" value={stats.strikes} />
         <Stat label="TIMES FED" value={stats.relapses} />
         <Stat label="HONEST REPORTS" value={stats.answered} />
+        <Stat label="CHORES FELLED" value={stats.choresDone} />
         <Stat label="TITANS SLAIN" value={slainNow} />
       </View>
 

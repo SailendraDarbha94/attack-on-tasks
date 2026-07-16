@@ -7,6 +7,7 @@ export type GameEvent =
   | { type: 'checkin_answered'; ts: number; habit: HabitId; answer: Answer; slotTs: number }
   | { type: 'encounter_expired'; ts: number; habit: HabitId; slotTs: number }
   | { type: 'chore_completed'; ts: number; choreId: number }
+  | { type: 'chore_skipped'; ts: number; choreId: number }
   | { type: 'titan_killed'; ts: number; habit: HabitId };
 
 export type GameEventType = GameEvent['type'];
@@ -34,4 +35,11 @@ export interface ScheduleSettings {
 export interface PendingEncounter {
   slotTs: number;
   habit: HabitId;
+}
+
+export interface Chore {
+  id: number;
+  name: string;
+  frequencyHours: number;
+  createdTs: number;
 }

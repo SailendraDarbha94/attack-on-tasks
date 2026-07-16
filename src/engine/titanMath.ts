@@ -64,6 +64,7 @@ export function reduceEvent(state: GameState, event: GameEvent): GameState {
       return withTitan(state, { ...titan, size: 0, alive: false, finisherReady: false });
     }
     case 'encounter_expired':
+    case 'chore_skipped':
       // The Titan wandered off — a busy day is not a failed day.
       return state;
   }
@@ -83,10 +84,18 @@ export interface BattleStats {
   relapses: number;
   expired: number;
   slain: number;
+  choresDone: number;
 }
 
 export function battleStats(events: readonly GameEvent[]): BattleStats {
-  const stats: BattleStats = { answered: 0, strikes: 0, relapses: 0, expired: 0, slain: 0 };
+  const stats: BattleStats = {
+    answered: 0,
+    strikes: 0,
+    relapses: 0,
+    expired: 0,
+    slain: 0,
+    choresDone: 0,
+  };
   for (const event of events) {
     switch (event.type) {
       case 'checkin_answered':
@@ -99,6 +108,9 @@ export function battleStats(events: readonly GameEvent[]): BattleStats {
         break;
       case 'titan_killed':
         stats.slain += 1;
+        break;
+      case 'chore_completed':
+        stats.choresDone += 1;
         break;
     }
   }

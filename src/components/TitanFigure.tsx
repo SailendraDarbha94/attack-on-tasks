@@ -3,10 +3,11 @@ import { Image } from 'expo-image';
 import type { HabitId } from '@/engine/types';
 
 export type TitanPose = 'idle' | 'grown' | 'flinch' | 'dying';
+export type TitanKind = HabitId | 'chore';
 
-// Art contract: 2:3 transparent PNGs, one file per boss per pose.
+// Art contract: 2:3 transparent PNGs, one file per titan kind per pose.
 // Regenerate or replace the files without touching any screen code.
-const ART: Record<HabitId, Record<TitanPose, number>> = {
+const ART: Record<TitanKind, Record<TitanPose, number>> = {
   smoke: {
     idle: require('../../assets/titans/smoke-idle.png'),
     grown: require('../../assets/titans/smoke-grown.png'),
@@ -19,6 +20,12 @@ const ART: Record<HabitId, Record<TitanPose, number>> = {
     flinch: require('../../assets/titans/drink-flinch.png'),
     dying: require('../../assets/titans/drink-dying.png'),
   },
+  chore: {
+    idle: require('../../assets/titans/chore-idle.png'),
+    grown: require('../../assets/titans/chore-grown.png'),
+    flinch: require('../../assets/titans/chore-flinch.png'),
+    dying: require('../../assets/titans/chore-dying.png'),
+  },
 };
 
 export function TitanFigure({
@@ -26,7 +33,7 @@ export function TitanFigure({
   pose = 'idle',
   height = 180,
 }: {
-  habit: HabitId;
+  habit: TitanKind;
   pose?: TitanPose;
   height?: number;
 }) {

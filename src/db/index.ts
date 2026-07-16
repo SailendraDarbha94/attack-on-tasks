@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 import { DEFAULT_SETTINGS, normalizeSettings } from '@/engine/schedule';
-import type { GameEvent, ScheduleSettings } from '@/engine/types';
+import type { Chore, GameEvent, ScheduleSettings } from '@/engine/types';
 import { migrate } from './migrations';
 
 const DB_NAME = 'attack-on-tasks.db';
@@ -76,6 +76,39 @@ export async function loadSettings(): Promise<ScheduleSettings> {
 
 export async function saveSettings(settings: ScheduleSettings): Promise<void> {
   await setSetting(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+export async function loadChores(): Promise<Chore[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    id: number;
+    name: string;
+    frequency_hours: number;
+    created_ts: number;
+  }>('SELECT id, name, frequency_hours, created_ts FROM chores WHERE archived = 0 ORDER BY id');
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    frequencyHours: r.frequency_hours,
+    createdTs: r.created_ts,
+  }));
+}
+
+export async function insertChore(name: string, frequencyHours: number): Promise<Chore> {
+  const db = await getDb();
+  const createdTs = Date.now();
+  const result = await db.runAsync(
+    'INSERT INTO chores (name, frequency_hours, created_ts) VALUES (?, ?, ?)',
+    name,
+    frequencyHours,
+    createdTs,
+  );
+  return { id: result.lastInsertRowId, name, frequencyHours, createdTs };
+}
+
+export async function archiveChore(id: number): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE chores SET archived = 1 WHERE id = ?', id);
 }
 
 // First app open marks the moment the Scout woke up in the forest —
