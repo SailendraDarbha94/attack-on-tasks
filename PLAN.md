@@ -180,21 +180,78 @@ your iPhone**. Milestone: the app icon is on your home screen.
 anything else.** This dogfooding gate is deliberate — cadence, tone, and
 the relapse experience will all be wrong in ways only real use reveals.
 
-### Chapter 2 — The Other Titans (3–5 sessions)
-Chores as lesser Titans: add/edit with frequency (daily, every 2 days, …),
-they spawn into the forest when due and linger; completing the chore = kill
-animation + XP + attack power up. Overdue chores grow slightly but cap out —
-a mountain of guilt-Titans is the failure mode of every to-do app; the forest
-must never look unwinnable. Milestone: laundry Titan dies on laundry day, and
-its XP visibly sharpens your blows against the bosses.
+### Chapter 2 — The Other Titans & the New Forest (4–6 sessions)
+Spec'd by the hand-drawn flow in `docs/design/aot-flow-sketch.pdf`
+(2026-07-15), clarified in conversation.
 
-### Chapter 3 — Consequences & ceremony (3–4 sessions)
-The meta-game: story beats at size thresholds, the earned finisher sequence
-for a boss at kill threshold, capture-and-reset narrative if a boss maxes
-out (story resets; XP/attack power survive — the Scout remembers), sound
-design, a stats/journal screen (size-over-time chart is the real trophy),
-optional iOS home-screen widget showing boss sizes (non-trivial in Expo;
-strictly optional).
+**Session 1 — shipped 2026-07-16.** Items 1–3 below are live on device
+(landing screen, branch-view forest, titan card, profile screen), plus the
+character-art intake (Beast Titan = smoke, Attack Titan = drink, Female
+Titan staged for chores) and the Wings of Freedom app icon.
+
+**Session 2 — the ＋ button comes alive (next).** Lesser Titans:
+- `chores` table (name, cadence in days, created) + add/edit form behind ＋.
+- All state derived, event-sourced like everything else: a chore is *due*
+  when `now - lastCompletion >= cadence`; due chores roam the forest as
+  smaller Female Titans; overdue growth is slight and hard-capped (the
+  forest must never look unwinnable).
+- Card polarity for task Titans: ✓ = did the thing → kill pose + XP_CHORE,
+  attack power up. ⊗ = "not today" → it wanders off until tomorrow, no
+  penalty (skipping honestly beats lying).
+- No chore notifications in v1 — bosses own the doorbell; chores are
+  pull-based via the forest. Revisit only if dogfooding demands it.
+- Milestone: laundry Titan dies on laundry day and the XP visibly
+  sharpens the blows against the bosses.
+
+**Session 3 — ceremony pass.** The kill moment earns real weight: Lottie
+slash + strike sound + haptic choreography, chore-kill celebration, empty
+clearing state, Levi tier tuning from field notes, data export (share the
+event log as JSON — local-only data deserves a lifeboat).
+
+Original sketch spec:
+
+1. **Landing screen** — shown on *every* launch: Captain Levi pops on with
+   dialogue keyed to your total kill count ("How would you like to be on my
+   squad?" → after enough kills: "Impressive — soon you can be a part of my
+   squad"). Flows into the home screen.
+2. **Home screen redesign** — the player character stands on a branch of a
+   giant tree, Titans roaming the clearing below (the bosses keep their
+   bottle and cigar). Edge controls: **+** add titan, person icon → profile
+   (stats), gear → settings.
+3. **Titan card** — tap a roaming Titan to open its card (name, art,
+   strength); tap anywhere else to dismiss. Buttons: **ⓘ** reveal details,
+   **✓** completed the task that weakens it, **⊗** failed it. Polarity flips
+   by type: for vice Titans ✓ means *stayed clean*; for task Titans ✓ means
+   *did the thing*. Notifications remain the summons; the card is the
+   reporting surface.
+4. **+ Add titan** — user-defined lesser Titans (chores/tasks) with a name
+   and frequency; they spawn when due and linger; completing = kill
+   animation + XP + attack power up. Overdue chores grow slightly but cap
+   out — a mountain of guilt-Titans is the failure mode of every to-do app;
+   the forest must never look unwinnable. (Mentor-granted quest Titans
+   arrive with the mentors in Chapter 3.)
+
+Milestone: laundry Titan dies on laundry day, and its XP visibly sharpens
+your blows against the bosses.
+
+### Chapter 3 — The Mentors, consequences & ceremony (4–5 sessions)
+The meta-game. **The mentor system** (from the flow sketch): after killing
+enough Titans, characters approach and recruit you toward virtues, each
+granting their own flavor of positive-habit quest Titans —
+
+- **Levi — strength & cleanliness**: pushup/squat/situp Titans, join a
+  martial arts program, clean your room
+- **Hange — knowledge & curiosity**: learn a new language, use the 3D
+  printer/software for personal projects
+- **Erwin — willpower & leadership**: yoga/meditation, reach out to old
+  friends, devise a long-term goal & strategize
+
+Plus the rest of the ceremony: story beats at size thresholds, the earned
+finisher sequence for a boss at kill threshold, capture-and-reset narrative
+if a boss maxes out (story resets; XP/attack power survive — the Scout
+remembers), sound design, a stats/journal screen (size-over-time chart is
+the real trophy; surfaces via the profile icon), optional iOS home-screen
+widget showing boss sizes (non-trivial in Expo; strictly optional).
 
 ### Chapter 4 — The real-time battle (someday, honestly)
 The ODM-gear, tether-swinging, nape-strike battle:

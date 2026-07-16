@@ -76,3 +76,31 @@ function withTitan(state: GameState, titan: TitanState): GameState {
 export function computeGameState(events: readonly GameEvent[]): GameState {
   return [...events].sort((a, b) => a.ts - b.ts).reduce(reduceEvent, initialState());
 }
+
+export interface BattleStats {
+  answered: number;
+  strikes: number;
+  relapses: number;
+  expired: number;
+  slain: number;
+}
+
+export function battleStats(events: readonly GameEvent[]): BattleStats {
+  const stats: BattleStats = { answered: 0, strikes: 0, relapses: 0, expired: 0, slain: 0 };
+  for (const event of events) {
+    switch (event.type) {
+      case 'checkin_answered':
+        stats.answered += 1;
+        if (event.answer === 'no') stats.strikes += 1;
+        else stats.relapses += 1;
+        break;
+      case 'encounter_expired':
+        stats.expired += 1;
+        break;
+      case 'titan_killed':
+        stats.slain += 1;
+        break;
+    }
+  }
+  return stats;
+}
