@@ -15,6 +15,7 @@ import { palette, spacing } from '@/constants/theme';
 import { useGame } from '@/state/game';
 
 const CADENCES = [
+  { label: '2× DAY', hours: 12 },
   { label: 'DAILY', hours: 24 },
   { label: '2 DAYS', hours: 48 },
   { label: '3 DAYS', hours: 72 },
@@ -152,9 +153,9 @@ const styles = StyleSheet.create({
   },
   cadenceText: {
     color: palette.textDim,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   cadenceTextActive: {
     color: palette.bg,

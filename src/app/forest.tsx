@@ -31,6 +31,15 @@ function formatCountdown(ms: number): string {
 const formatClock = (ts: number) =>
   new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+const cadenceText = (hours: number) =>
+  hours === 12
+    ? 'twice a day'
+    : hours === 24
+      ? 'every day'
+      : hours === 168
+        ? 'every week'
+        : `every ${hours / 24} days`;
+
 export default function ForestScreen() {
   const { game, pending, settings, hydrated, chores, events } = useGame();
   const [now, setNow] = useState(() => Date.now());
@@ -294,8 +303,8 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
           {showDetails && !verdict && (
             <View style={styles.details}>
               <Text style={styles.detailMeta}>
-                Returns every {chore.frequencyHours / 24 === 7 ? 'week' : `${chore.frequencyHours / 24} day(s)`}{' '}
-                once slain. Killing it sharpens your blades against the bosses.
+                Returns {cadenceText(chore.frequencyHours)} once slain. Killing it sharpens your
+                blades against the bosses.
               </Text>
               <Pressable onPress={onRelease} hitSlop={6}>
                 <Text style={styles.release}>RELEASE THIS TITAN (remove the task)</Text>
