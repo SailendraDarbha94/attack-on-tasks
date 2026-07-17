@@ -237,7 +237,12 @@ your blows against the bosses.
 ### Chapter 3 — The Mentors, consequences & ceremony (4–5 sessions)
 The meta-game. **The mentor system** (from the flow sketch): after killing
 enough Titans, characters approach and recruit you toward virtues, each
-granting their own flavor of positive-habit quest Titans —
+granting their own flavor of positive-habit quest Titans. **Unlock locked
+2026-07-16: 100 lesser-Titan kills AND one boss slain.** (First slice
+shipped same day: unlock gate + captains screen granting quest Titans via
+the chore system, minimal finisher blow on the boss card, ⓘ explainer on
+the landing screen. Remaining for this chapter: the full finisher ceremony,
+capture-and-reset narrative, story beats, journal.) —
 
 - **Levi — strength & cleanliness**: pushup/squat/situp Titans, join a
   martial arts program, clean your room

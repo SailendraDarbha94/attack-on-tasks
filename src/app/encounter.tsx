@@ -14,6 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { playSfx } from '@/audio/sfx';
+import { StrikeEffect } from '@/components/StrikeEffect';
 import { TitanFigure } from '@/components/TitanFigure';
 import { palette, spacing } from '@/constants/theme';
 import { TITANS } from '@/content/titans';
@@ -45,7 +47,9 @@ export default function EncounterScreen() {
     await answer(current, ans);
     setResult({ habit: current.habit, answer: ans });
     if (ans === 'no') {
+      playSfx('strike');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
       flash.value = withSequence(
         withTiming(0.85, { duration: 80 }),
         withTiming(0, { duration: 380 }),
@@ -57,6 +61,7 @@ export default function EncounterScreen() {
       );
       scale.value = withDelay(140, withSpring(0.8, { damping: 12 }));
     } else {
+      playSfx('grow');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       scale.value = withTiming(1.18, { duration: 900, easing: Easing.out(Easing.quad) });
     }
@@ -85,6 +90,7 @@ export default function EncounterScreen() {
               height={230}
             />
           </Animated.View>
+          {struck && <StrikeEffect size={280} />}
           <Animated.View pointerEvents="none" style={[styles.flash, flashStyle]} />
         </View>
         <Text style={[styles.verdict, { color: struck ? palette.steel : palette.blood }]}>

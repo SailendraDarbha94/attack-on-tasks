@@ -43,6 +43,7 @@ interface GameStore {
   completeChore: (choreId: number) => Promise<void>;
   skipChore: (choreId: number) => Promise<void>;
   releaseChore: (choreId: number) => Promise<void>;
+  killTitan: (habit: HabitId) => Promise<void>;
 }
 
 export const useGame = create<GameStore>()((set, get) => ({
@@ -120,6 +121,14 @@ export const useGame = create<GameStore>()((set, get) => ({
   async releaseChore(choreId) {
     await archiveChore(choreId);
     set({ chores: get().chores.filter((c) => c.id !== choreId) });
+  },
+
+  async killTitan(habit) {
+    // the engine reducer guards this: no finisher, no kill
+    const event: GameEvent = { type: 'titan_killed', ts: Date.now(), habit };
+    await appendEvent(event);
+    const events = [...get().events, event];
+    set({ events, game: computeGameState(events) });
   },
 
   async updateSettings(patch) {

@@ -12,6 +12,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { playSfx } from '@/audio/sfx';
+import {
+  FallingLeaves,
+  Fireflies,
+  LightShaft,
+  MistBand,
+  useWander,
+} from '@/components/ForestAmbience';
+import { StrikeEffect } from '@/components/StrikeEffect';
 import { TitanFigure } from '@/components/TitanFigure';
 import { palette, spacing } from '@/constants/theme';
 import { TITANS } from '@/content/titans';
@@ -56,8 +65,25 @@ export default function ForestScreen() {
   const roamingChores = dueChores.slice(0, 4);
   const hiddenChores = dueChores.length - roamingChores.length;
 
+  // Proportional scene layout, measured — never let a titan reach the branch
+  // and never push chrome off-screen, regardless of device or banners.
+  const [sceneH, setSceneH] = useState(0);
+  const perchH = Math.min(230, Math.max(140, Math.round(sceneH * 0.4)));
+  const branchY = Math.round(perchH * 0.56);
+  const maxTitanH = Math.max(100, sceneH - branchY - 30);
+
   return (
-    <SafeAreaView style={styles.screen}>
+    <View style={styles.root}>
+      <Image
+        source={require('../../assets/scenery/forest-bg.png')}
+        style={styles.sceneBackdrop}
+        contentFit="cover"
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.sceneBackdrop, { backgroundColor: dayTint(new Date(now).getHours()) }]}
+      />
+      <SafeAreaView style={styles.screen}>
       <Text style={styles.overline}>FOREST OF THE GIANT TREES</Text>
 
       {pending.length > 0 && (
@@ -72,60 +98,88 @@ export default function ForestScreen() {
       )}
 
       {/* the clearing: you on a branch, titans roaming below */}
-      <View style={styles.scene}>
-        <View style={styles.branch} />
-        <Image
-          source={require('../../assets/characters/eren.png')}
-          style={styles.eren}
-          contentFit="contain"
-        />
+      <View
+        style={styles.scene}
+        onLayout={(e) => setSceneH(Math.round(e.nativeEvent.layout.height))}
+      >
+        {sceneH > 0 && (
+          <>
+            <Image
+              source={require('../../assets/scenery/trunk.png')}
+              style={[styles.trunk, { width: Math.round(perchH * 0.32), height: sceneH }]}
+              contentFit="fill"
+              pointerEvents="none"
+            />
+            <LightShaft left={44} angle={-8} period={14_000} height={sceneH} />
+            <LightShaft left={180} angle={-8} period={19_000} phase={2.4} height={sceneH} />
+            <LightShaft left={306} angle={-8} period={23_000} phase={4.1} height={sceneH} />
+            <MistBand bottom={30} height={20} opacity={0.05} duration={34_000} />
+            <CanopyPerch height={perchH} />
 
-        {Object.values(game.titans).map((titan, i) => (
-          <RoamingTitan
-            key={titan.habit}
-            titan={titan}
-            slot={i}
-            onPress={() => setCardHabit(titan.habit)}
-          />
-        ))}
+            {Object.values(game.titans).map((titan, i) => (
+              <RoamingTitan
+                key={titan.habit}
+                titan={titan}
+                slot={i}
+                maxHeight={maxTitanH}
+                onPress={() => setCardHabit(titan.habit)}
+              />
+            ))}
 
-        {roamingChores.map((state, i) => (
-          <RoamingChore
-            key={state.chore.id}
-            state={state}
-            slot={i}
-            onPress={() => setCardChoreId(state.chore.id)}
-          />
-        ))}
+            {roamingChores.map((state, i) => (
+              <RoamingChore
+                key={state.chore.id}
+                state={state}
+                slot={i}
+                sceneH={sceneH}
+                branchY={branchY}
+                onPress={() => setCardChoreId(state.chore.id)}
+              />
+            ))}
 
-        <View style={styles.controls}>
-          <Link href="/add-titan" asChild>
-            <Pressable style={styles.controlBtn} hitSlop={8}>
-              <Text style={styles.controlGlyph}>＋</Text>
-            </Pressable>
-          </Link>
-          <Link href="/profile" asChild>
-            <Pressable style={styles.controlBtn} hitSlop={8}>
-              <Text style={styles.controlGlyph}>⚔</Text>
-            </Pressable>
-          </Link>
-          <Link href="/settings" asChild>
-            <Pressable style={styles.controlBtn} hitSlop={8}>
-              <Text style={styles.controlGlyph}>⚙</Text>
-            </Pressable>
-          </Link>
-        </View>
+            <MistBand bottom={0} height={40} opacity={0.12} duration={26_000} />
+            <MistBand bottom={14} height={24} opacity={0.08} duration={42_000} />
+            <Fireflies />
+            <FallingLeaves drop={Math.round(sceneH * 0.92)} />
 
-        {hiddenChores > 0 && (
-          <Text style={styles.hiddenChores}>
-            +{hiddenChores} more stir beyond the treeline
-          </Text>
+            <View
+              style={[
+                styles.trunkControls,
+                {
+                  left: Math.max(4, -10 + Math.round((perchH * 0.32) / 2) - 20),
+                  top: branchY + 30,
+                },
+              ]}
+            >
+              <Link href="/add-titan" asChild>
+                <Pressable style={styles.controlBtn} hitSlop={8}>
+                  <Text style={styles.controlGlyph}>＋</Text>
+                </Pressable>
+              </Link>
+              <Link href="/profile" asChild>
+                <Pressable style={styles.controlBtn} hitSlop={8}>
+                  <Text style={styles.controlGlyph}>⚔</Text>
+                </Pressable>
+              </Link>
+              <Link href="/settings" asChild>
+                <Pressable style={styles.controlBtn} hitSlop={8}>
+                  <Text style={styles.controlGlyph}>⚙</Text>
+                </Pressable>
+              </Link>
+            </View>
+
+            {hiddenChores > 0 && (
+              <Text style={styles.hiddenChores}>
+                +{hiddenChores} more stir beyond the treeline
+              </Text>
+            )}
+          </>
         )}
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerStats}>
-          ATTACK POWER {game.attackPower} · XP {game.xp}
+        <Text style={styles.footerStats} numberOfLines={1}>
+          AP {game.attackPower} · XP {game.xp}
         </Text>
         <Text style={styles.footerHint}>
           {!hydrated
@@ -138,7 +192,70 @@ export default function ForestScreen() {
 
       <TitanCardModal habit={cardHabit} onClose={() => setCardHabit(null)} />
       <ChoreCardModal choreId={cardChoreId} onClose={() => setCardChoreId(null)} />
-    </SafeAreaView>
+      </SafeAreaView>
+      <Image
+        source={require('../../assets/scenery/vignette.png')}
+        style={styles.sceneBackdrop}
+        contentFit="fill"
+        pointerEvents="none"
+      />
+    </View>
+  );
+}
+
+// The forest lives on your clock: cold before dawn, warm at dusk.
+function dayTint(hour: number): string {
+  if (hour < 5) return 'rgba(10, 22, 34, 0.35)';
+  if (hour < 8) return 'rgba(56, 82, 60, 0.16)';
+  if (hour < 12) return 'rgba(44, 78, 48, 0.13)';
+  if (hour < 16) return 'rgba(28, 52, 36, 0.08)';
+  if (hour < 19) return 'rgba(122, 84, 34, 0.14)';
+  if (hour < 22) return 'rgba(14, 26, 28, 0.3)';
+  return 'rgba(8, 16, 22, 0.4)';
+}
+
+// ── the branch you watch from, swaying with the canopy ───────────────────
+// All internal geometry derives from the measured perch height so Eren's
+// feet stay planted on the branch on every screen size.
+function CanopyPerch({ height }: { height: number }) {
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    t.value = withRepeat(
+      withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [t]);
+
+  const sway = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${(t.value - 0.5) * 0.8}deg` }],
+  }));
+
+  const treeW = Math.round(height * (1000 / 760));
+  const branchY = Math.round(height * 0.56);
+  const erenH = Math.round(height * 0.4);
+  const erenW = Math.round(erenH * 0.3);
+
+  return (
+    <Animated.View pointerEvents="none" style={[styles.perch, { height }, sway]}>
+      <Image
+        source={require('../../assets/scenery/tree-branch.png')}
+        style={{ position: 'absolute', top: 0, left: -12, width: treeW, height }}
+        contentFit="contain"
+      />
+      <Image
+        source={require('../../assets/characters/eren.png')}
+        style={{
+          position: 'absolute',
+          top: branchY - erenH + 2,
+          left: Math.round(treeW * 0.42) - Math.round(erenW / 2),
+          width: erenW,
+          height: erenH,
+        }}
+        contentFit="contain"
+      />
+    </Animated.View>
   );
 }
 
@@ -146,38 +263,27 @@ export default function ForestScreen() {
 function RoamingTitan({
   titan,
   slot,
+  maxHeight,
   onPress,
 }: {
   titan: TitanState;
   slot: number;
+  maxHeight: number;
   onPress: () => void;
 }) {
-  const breathe = useSharedValue(1);
-  const sway = useSharedValue(0);
+  const roam = useWander({
+    range: 30,
+    period: 11_000 + slot * 2600,
+    bob: 4,
+    tilt: 1.4,
+    phase: slot * 1.7,
+    enabled: titan.alive,
+  });
 
-  useEffect(() => {
-    if (!titan.alive) return;
-    breathe.value = withRepeat(
-      withTiming(1.04, { duration: 2600, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-    sway.value = withRepeat(
-      withTiming(slot % 2 === 0 ? 10 : -10, {
-        duration: 5200 + slot * 900,
-        easing: Easing.inOut(Easing.quad),
-      }),
-      -1,
-      true,
-    );
-  }, [breathe, sway, slot, titan.alive]);
-
-  const roam = useAnimatedStyle(() => ({
-    transform: [{ translateX: sway.value }, { scale: breathe.value }],
-  }));
-
-  // size is visible in the world: a fed titan looms, a starved one shrinks
-  const height = titan.alive ? 110 + Math.round((titan.size / MAX_SIZE) * 130) : 110;
+  // size is visible in the world: a fed titan looms, a starved one shrinks —
+  // but no titan may ever reach the branch you stand on
+  const wanted = titan.alive ? 110 + Math.round((titan.size / MAX_SIZE) * 130) : 110;
+  const height = Math.min(wanted, maxHeight);
 
   return (
     <Animated.View
@@ -188,52 +294,54 @@ function RoamingTitan({
         roam,
       ]}
     >
+      <View style={[styles.contactShadow, { width: Math.round(height * 0.5) }]} />
       <Pressable onPress={onPress} hitSlop={6}>
-        <TitanFigure habit={titan.habit} pose={titan.alive ? 'idle' : 'dying'} height={height} />
+        <TitanFigure habit={titan.habit} pose={titan.alive ? 'walk' : 'dying'} height={height} />
       </Pressable>
     </Animated.View>
   );
 }
 
 // ── a due chore stalking the clearing, smaller than the bosses ────────────
+// Depth slots as fractions of the scene, so they scale with the screen.
 const CHORE_SLOTS = [
-  { left: '34%' as const, bottom: 0 },
-  { left: '14%' as const, bottom: 104 },
-  { right: '30%' as const, bottom: 118 },
-  { left: '48%' as const, bottom: 156 },
+  { left: '34%' as const, f: 0.02 },
+  { left: '14%' as const, f: 0.2 },
+  { right: '30%' as const, f: 0.24 },
+  { left: '48%' as const, f: 0.3 },
 ];
 
 function RoamingChore({
   state,
   slot,
+  sceneH,
+  branchY,
   onPress,
 }: {
   state: ChoreTitanState;
   slot: number;
+  sceneH: number;
+  branchY: number;
   onPress: () => void;
 }) {
-  const sway = useSharedValue(0);
+  const roam = useWander({
+    range: 20,
+    period: 6800 + slot * 1400,
+    bob: 3,
+    tilt: 1.8,
+    phase: 2.3 + slot * 2.1,
+  });
 
-  useEffect(() => {
-    sway.value = withRepeat(
-      withTiming(slot % 2 === 0 ? -8 : 8, {
-        duration: 4200 + slot * 700,
-        easing: Easing.inOut(Easing.quad),
-      }),
-      -1,
-      true,
-    );
-  }, [sway, slot]);
-
-  const roam = useAnimatedStyle(() => ({
-    transform: [{ translateX: sway.value }],
-  }));
-
-  // undone work looms a little larger each day, but never becomes a boss
-  const height = 84 + Math.round(state.menace * 56);
+  const { f, ...position } = CHORE_SLOTS[slot] ?? CHORE_SLOTS[0];
+  const bottom = Math.round(sceneH * f);
+  // undone work looms a little larger each day, but never becomes a boss —
+  // and never climbs high enough to reach the branch
+  const wanted = 84 + Math.round(state.menace * 56);
+  const height = Math.max(60, Math.min(wanted, sceneH - bottom - branchY - 26));
 
   return (
-    <Animated.View style={[styles.roamer, CHORE_SLOTS[slot] ?? CHORE_SLOTS[0], roam]}>
+    <Animated.View style={[styles.roamer, position, { bottom }, roam]}>
+      <View style={[styles.contactShadow, { width: Math.round(height * 0.5) }]} />
       <Pressable onPress={onPress} hitSlop={6}>
         <TitanFigure habit="chore" height={height} />
       </Pressable>
@@ -260,7 +368,9 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
   const onDone = async () => {
     await completeChore(chore.id);
     setVerdict('done');
+    playSfx('kill');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
   };
 
   const onSkip = async () => {
@@ -282,6 +392,7 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
           <Text style={styles.choreKind}>LESSER TITAN</Text>
           <View style={styles.cardStage}>
             <TitanFigure habit="chore" pose={verdict === 'done' ? 'dying' : 'idle'} height={170} />
+            {verdict === 'done' && <StrikeEffect size={200} />}
           </View>
 
           {verdict === 'done' ? (
@@ -337,9 +448,9 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
 
 // ── the titan card: ⊗ it fed · ⓘ details · ✓ stayed clean ────────────────
 function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: () => void }) {
-  const { game, pending, settings, answer } = useGame();
+  const { game, pending, settings, answer, killTitan } = useGame();
   const [showDetails, setShowDetails] = useState(false);
-  const [verdict, setVerdict] = useState<Answer | null>(null);
+  const [verdict, setVerdict] = useState<Answer | 'kill' | null>(null);
 
   useEffect(() => {
     setShowDetails(false);
@@ -356,8 +467,23 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
     if (!report) return;
     await answer(report, ans);
     setVerdict(ans);
-    if (ans === 'no') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    if (ans === 'no') {
+      playSfx('strike');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
+    } else {
+      playSfx('grow');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+  };
+
+  const onFinisher = async () => {
+    await killTitan(habit!);
+    setVerdict('kill');
+    playSfx('kill');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 150);
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 320);
   };
 
   return (
@@ -366,16 +492,29 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.cardName}>{def.name}</Text>
           <View style={styles.cardStage}>
-            <TitanFigure
-              habit={habit}
-              pose={!titan.alive ? 'dying' : verdict ? (verdict === 'no' ? 'flinch' : 'grown') : 'idle'}
-              height={190}
-            />
+            {verdict === 'kill' && habit === 'drink' ? (
+              <Image
+                source={require('../../assets/titans/drink-finisher.jpg')}
+                style={styles.finisherStill}
+                contentFit="cover"
+              />
+            ) : (
+              <TitanFigure
+                habit={habit}
+                pose={!titan.alive ? 'dying' : verdict ? (verdict === 'no' ? 'flinch' : 'grown') : 'idle'}
+                height={190}
+              />
+            )}
+            {(verdict === 'no' || verdict === 'kill') && <StrikeEffect size={220} />}
           </View>
 
           {verdict ? (
-            <Text style={[styles.verdict, { color: verdict === 'no' ? palette.steel : palette.blood }]}>
-              {verdict === 'no' ? def.onNo : def.onYes}
+            <Text style={[styles.verdict, { color: verdict === 'yes' ? palette.blood : palette.steel }]}>
+              {verdict === 'kill'
+                ? `The nape opens. Steam pours out — ${def.name} falls, and the forest goes quiet.`
+                : verdict === 'no'
+                  ? def.onNo
+                  : def.onYes}
             </Text>
           ) : (
             <Text style={styles.cardEpithet}>{titan.alive ? def.epithet : 'Slain. The forest remembers.'}</Text>
@@ -404,6 +543,12 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
                 and unhurt.
               </Text>
             </View>
+          )}
+
+          {!verdict && titan.alive && titan.finisherReady && (
+            <Pressable style={styles.finisher} onPress={onFinisher}>
+              <Text style={styles.finisherText}>⚔ DELIVER THE FINISHING BLOW</Text>
+            </Pressable>
           )}
 
           {!verdict && titan.alive && (
@@ -477,9 +622,20 @@ function ReportButton({
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  root: {
     flex: 1,
     backgroundColor: palette.bg,
+  },
+  sceneBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
     paddingHorizontal: spacing.lg,
   },
   overline: {
@@ -505,24 +661,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: spacing.sm,
   },
-  branch: {
+  perch: {
     position: 'absolute',
-    top: 128,
-    left: -spacing.lg,
-    width: '58%',
-    height: 18,
-    backgroundColor: '#2E2013',
-    borderColor: '#1D1409',
-    borderWidth: 2,
-    borderRadius: 9,
-    transform: [{ rotate: '-4deg' }],
-  },
-  eren: {
-    position: 'absolute',
-    top: 14,
-    left: 34,
-    width: 38,
-    height: 118,
+    top: 0,
+    left: 0,
+    right: 0,
     zIndex: 2,
   },
   roamer: {
@@ -538,19 +681,32 @@ const styles = StyleSheet.create({
   roamerSlain: {
     opacity: 0.45,
   },
-  controls: {
+  contactShadow: {
     position: 'absolute',
-    left: 0,
-    top: 190,
+    bottom: -5,
+    alignSelf: 'center',
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#030607',
+    opacity: 0.55,
+  },
+  trunk: {
+    position: 'absolute',
+    top: 0,
+    left: -10,
+    zIndex: 1,
+  },
+  trunkControls: {
+    position: 'absolute',
     gap: spacing.sm,
     zIndex: 3,
   },
   controlBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(26, 18, 9, 0.92)',
+    borderColor: '#4A3520',
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -620,6 +776,11 @@ const styles = StyleSheet.create({
   },
   cardStage: {
     marginVertical: spacing.xs,
+  },
+  finisherStill: {
+    width: 260,
+    height: 190,
+    borderRadius: 14,
   },
   cardEpithet: {
     color: palette.textDim,
@@ -697,6 +858,20 @@ const styles = StyleSheet.create({
     color: palette.textDim,
     fontSize: 12,
     textAlign: 'center',
+  },
+  finisher: {
+    alignSelf: 'stretch',
+    backgroundColor: palette.blood,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  finisherText: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.5,
   },
   closeCta: {
     alignSelf: 'stretch',
