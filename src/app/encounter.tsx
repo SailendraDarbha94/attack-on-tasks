@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { playSfx } from '@/audio/sfx';
 import { StrikeEffect } from '@/components/StrikeEffect';
 import { TitanFigure } from '@/components/TitanFigure';
+import { useShake } from '@/components/useShake';
 import { palette, spacing } from '@/constants/theme';
 import { TITANS } from '@/content/titans';
 import { HOUR, nextSlot } from '@/engine/schedule';
@@ -30,6 +31,7 @@ const formatClock = (ts: number) =>
 export default function EncounterScreen() {
   const { game, pending, settings, answer } = useGame();
   const [result, setResult] = useState<{ habit: HabitId; answer: Answer } | null>(null);
+  const screenShake = useShake();
 
   const scale = useSharedValue(1);
   const shake = useSharedValue(0);
@@ -48,6 +50,7 @@ export default function EncounterScreen() {
     setResult({ habit: current.habit, answer: ans });
     if (ans === 'no') {
       playSfx('strike');
+      screenShake.trigger(8);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
       flash.value = withSequence(
@@ -82,6 +85,7 @@ export default function EncounterScreen() {
     const sizePct = Math.round((titan.size / MAX_SIZE) * 100);
     return (
       <SafeAreaView style={styles.screen}>
+        <Animated.View style={[styles.shakeWrap, screenShake.style]}>
         <View style={styles.stage}>
           <Animated.View style={figureStyle}>
             <TitanFigure
@@ -115,6 +119,7 @@ export default function EncounterScreen() {
             {pending.length > 0 ? 'DRAW YOUR BLADES AGAIN' : 'LEAVE THE CLEARING'}
           </Text>
         </Pressable>
+        </Animated.View>
       </SafeAreaView>
     );
   }
@@ -173,6 +178,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.bg,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
+  },
+  shakeWrap: {
+    flex: 1,
   },
   stage: {
     flex: 1,

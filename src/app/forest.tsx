@@ -13,6 +13,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { playSfx } from '@/audio/sfx';
+import { EmberField } from '@/components/EmberField';
 import {
   FallingLeaves,
   Fireflies,
@@ -20,6 +21,7 @@ import {
   MistBand,
   useWander,
 } from '@/components/ForestAmbience';
+import { useShake } from '@/components/useShake';
 import { StrikeEffect } from '@/components/StrikeEffect';
 import { TitanFigure } from '@/components/TitanFigure';
 import { palette, spacing } from '@/constants/theme';
@@ -68,17 +70,36 @@ export default function ForestScreen() {
   // Proportional scene layout, measured — never let a titan reach the branch
   // and never push chrome off-screen, regardless of device or banners.
   const [sceneH, setSceneH] = useState(0);
+  const [sceneW, setSceneW] = useState(0);
   const perchH = Math.min(230, Math.max(140, Math.round(sceneH * 0.4)));
   const branchY = Math.round(perchH * 0.56);
   const maxTitanH = Math.max(100, sceneH - branchY - 30);
 
+  // the watcher's camera sways gently; layers drift at different rates
+  const cam = useSharedValue(0);
+  useEffect(() => {
+    cam.value = withRepeat(
+      withTiming(1, { duration: 26_000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+  }, [cam]);
+  const bgDrift = useAnimatedStyle(() => ({
+    transform: [{ translateX: (cam.value - 0.5) * 16 }, { scale: 1.05 }],
+  }));
+  const shaftDrift = useAnimatedStyle(() => ({
+    transform: [{ translateX: (cam.value - 0.5) * 30 }],
+  }));
+
   return (
     <View style={styles.root}>
-      <Image
-        source={require('../../assets/scenery/forest-bg.png')}
-        style={styles.sceneBackdrop}
-        contentFit="cover"
-      />
+      <Animated.View pointerEvents="none" style={[styles.sceneBackdrop, bgDrift]}>
+        <Image
+          source={require('../../assets/scenery/forest-bg.png')}
+          style={styles.sceneBackdrop}
+          contentFit="cover"
+        />
+      </Animated.View>
       <View
         pointerEvents="none"
         style={[styles.sceneBackdrop, { backgroundColor: dayTint(new Date(now).getHours()) }]}
@@ -100,7 +121,10 @@ export default function ForestScreen() {
       {/* the clearing: you on a branch, titans roaming below */}
       <View
         style={styles.scene}
-        onLayout={(e) => setSceneH(Math.round(e.nativeEvent.layout.height))}
+        onLayout={(e) => {
+          setSceneH(Math.round(e.nativeEvent.layout.height));
+          setSceneW(Math.round(e.nativeEvent.layout.width));
+        }}
       >
         {sceneH > 0 && (
           <>
@@ -110,9 +134,11 @@ export default function ForestScreen() {
               contentFit="fill"
               pointerEvents="none"
             />
-            <LightShaft left={44} angle={-8} period={14_000} height={sceneH} />
-            <LightShaft left={180} angle={-8} period={19_000} phase={2.4} height={sceneH} />
-            <LightShaft left={306} angle={-8} period={23_000} phase={4.1} height={sceneH} />
+            <Animated.View pointerEvents="none" style={[styles.shaftLayer, shaftDrift]}>
+              <LightShaft left={44} angle={-8} period={14_000} height={sceneH} />
+              <LightShaft left={180} angle={-8} period={19_000} phase={2.4} height={sceneH} />
+              <LightShaft left={306} angle={-8} period={23_000} phase={4.1} height={sceneH} />
+            </Animated.View>
             <MistBand bottom={30} height={20} opacity={0.05} duration={34_000} />
             <CanopyPerch height={perchH} />
 
@@ -140,6 +166,7 @@ export default function ForestScreen() {
             <MistBand bottom={0} height={40} opacity={0.12} duration={26_000} />
             <MistBand bottom={14} height={24} opacity={0.08} duration={42_000} />
             <Fireflies />
+            <EmberField width={sceneW} height={sceneH} />
             <FallingLeaves drop={Math.round(sceneH * 0.92)} />
 
             <View
@@ -354,6 +381,7 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
   const { chores, events, completeChore, skipChore, releaseChore } = useGame();
   const [showDetails, setShowDetails] = useState(false);
   const [verdict, setVerdict] = useState<'done' | 'skip' | null>(null);
+  const shake = useShake();
 
   useEffect(() => {
     setShowDetails(false);
@@ -369,6 +397,7 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
     await completeChore(chore.id);
     setVerdict('done');
     playSfx('kill');
+    shake.trigger(7);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
   };
@@ -387,6 +416,7 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
+        <Animated.View style={shake.style}>
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.cardName}>{chore.name.toUpperCase()}</Text>
           <Text style={styles.choreKind}>LESSER TITAN</Text>
@@ -441,6 +471,7 @@ function ChoreCardModal({ choreId, onClose }: { choreId: number | null; onClose:
             </Pressable>
           )}
         </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
@@ -451,6 +482,7 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
   const { game, pending, settings, answer, killTitan } = useGame();
   const [showDetails, setShowDetails] = useState(false);
   const [verdict, setVerdict] = useState<Answer | 'kill' | null>(null);
+  const shake = useShake();
 
   useEffect(() => {
     setShowDetails(false);
@@ -469,6 +501,7 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
     setVerdict(ans);
     if (ans === 'no') {
       playSfx('strike');
+      shake.trigger(6);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 130);
     } else {
@@ -481,6 +514,7 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
     await killTitan(habit!);
     setVerdict('kill');
     playSfx('kill');
+    shake.trigger(11);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 150);
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid), 320);
@@ -489,6 +523,7 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
+        <Animated.View style={shake.style}>
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.cardName}>{def.name}</Text>
           <View style={styles.cardStage}>
@@ -589,6 +624,7 @@ function TitanCardModal({ habit, onClose }: { habit: HabitId | null; onClose: ()
             </Pressable>
           )}
         </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
@@ -695,6 +731,13 @@ const styles = StyleSheet.create({
     top: 0,
     left: -10,
     zIndex: 1,
+  },
+  shaftLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   trunkControls: {
     position: 'absolute',
