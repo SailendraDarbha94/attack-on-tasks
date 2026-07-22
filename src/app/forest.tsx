@@ -28,7 +28,7 @@ import { palette, spacing } from '@/constants/theme';
 import { TITANS } from '@/content/titans';
 import { choreTitans, type ChoreTitanState } from '@/engine/chores';
 import { nextSlot } from '@/engine/schedule';
-import { MAX_SIZE, XP_CHORE } from '@/engine/titanMath';
+import { MAX_SIZE, pendingRespawns, XP_CHORE } from '@/engine/titanMath';
 import type { Answer, HabitId, TitanState } from '@/engine/types';
 import { useGame } from '@/state/game';
 
@@ -63,6 +63,7 @@ export default function ForestScreen() {
   }, []);
 
   const upcoming = nextSlot(now, settings);
+  const respawns = pendingRespawns(events, now);
   const dueChores = choreTitans(chores, events, now).filter((c) => c.due);
   const roamingChores = dueChores.slice(0, 4);
   const hiddenChores = dueChores.length - roamingChores.length;
@@ -142,15 +143,17 @@ export default function ForestScreen() {
             <MistBand bottom={30} height={20} opacity={0.05} duration={34_000} />
             <CanopyPerch height={perchH} />
 
-            {Object.values(game.titans).map((titan, i) => (
-              <RoamingTitan
-                key={titan.habit}
-                titan={titan}
-                slot={i}
-                maxHeight={maxTitanH}
-                onPress={() => setCardHabit(titan.habit)}
-              />
-            ))}
+            {Object.values(game.titans)
+              .filter((titan) => titan.alive)
+              .map((titan, i) => (
+                <RoamingTitan
+                  key={titan.habit}
+                  titan={titan}
+                  slot={i}
+                  maxHeight={maxTitanH}
+                  onPress={() => setCardHabit(titan.habit)}
+                />
+              ))}
 
             {roamingChores.map((state, i) => (
               <RoamingChore
@@ -215,6 +218,12 @@ export default function ForestScreen() {
               ? `Next titans emerge in ${formatCountdown(upcoming - now)}`
               : 'No encounters scheduled.'}
         </Text>
+        {respawns.map((r) => (
+          <Text key={r.habit} style={styles.respawnHint}>
+            {TITANS[r.habit].name} lies slain. Something stirs in{' '}
+            {formatCountdown(r.at - now)}…
+          </Text>
+        ))}
       </View>
 
       <TitanCardModal habit={cardHabit} onClose={() => setCardHabit(null)} />
@@ -793,6 +802,11 @@ const styles = StyleSheet.create({
   footerHint: {
     color: palette.textDim,
     fontSize: 12,
+  },
+  respawnHint: {
+    color: palette.amber,
+    fontSize: 11,
+    fontStyle: 'italic',
   },
   backdrop: {
     flex: 1,

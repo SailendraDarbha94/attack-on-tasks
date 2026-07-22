@@ -132,11 +132,12 @@ describe('computeGameState', () => {
     expect(state.titans.smoke.alive).toBe(true);
   });
 
-  it('answers aimed at a dead titan are ignored', () => {
+  it('answers aimed at a dead titan still earn honesty XP but move no size', () => {
     const grind = Array.from({ length: 40 }, (_, i) => no(minute(i)));
     const afterKill = [...grind, kill(minute(100))];
     const state = computeGameState([...afterKill, no(minute(101))]);
     const reference = computeGameState(afterKill);
-    expect(state).toEqual(reference);
+    expect(state.titans).toEqual(reference.titans);
+    expect(state.xp).toBeGreaterThan(reference.xp);
   });
 });

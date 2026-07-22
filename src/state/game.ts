@@ -11,7 +11,7 @@ import {
   saveSettings,
 } from '@/db';
 import { expiryEvents, normalizeSettings, pendingEncounters } from '@/engine/schedule';
-import { computeGameState, initialState } from '@/engine/titanMath';
+import { computeGameState, initialState, respawnEvents } from '@/engine/titanMath';
 import type {
   Answer,
   Chore,
@@ -64,7 +64,10 @@ export const useGame = create<GameStore>()((set, get) => ({
 
     const expiries = expiryEvents(stored, startTs, now, settings);
     for (const event of expiries) await appendEvent(event);
-    const events = stored.concat(expiries);
+    // the urge returns: materialize due respawns, same as expiries
+    const respawns = respawnEvents(stored.concat(expiries), now);
+    for (const event of respawns) await appendEvent(event);
+    const events = stored.concat(expiries, respawns);
 
     set({
       hydrated: true,

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   interpolate,
   useAnimatedStyle,
@@ -36,8 +37,15 @@ export function useWander({
   const t = useSharedValue(0);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      // a slain titan must actually stop — the repeat loop does not die on
+      // its own when the effect re-runs
+      cancelAnimation(t);
+      t.value = 0;
+      return;
+    }
     t.value = withRepeat(withTiming(1, { duration: period, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(t);
   }, [enabled, period, t]);
 
   return useAnimatedStyle(() => {

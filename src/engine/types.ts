@@ -8,7 +8,8 @@ export type GameEvent =
   | { type: 'encounter_expired'; ts: number; habit: HabitId; slotTs: number }
   | { type: 'chore_completed'; ts: number; choreId: number }
   | { type: 'chore_skipped'; ts: number; choreId: number }
-  | { type: 'titan_killed'; ts: number; habit: HabitId };
+  | { type: 'titan_killed'; ts: number; habit: HabitId }
+  | { type: 'titan_respawned'; ts: number; habit: HabitId };
 
 export type GameEventType = GameEvent['type'];
 
