@@ -1,0 +1,8 @@
+node_modules/
+chart/
+side/
+out2/
+scenery/
+sfx/
+verify-*/
+package-lock.json
