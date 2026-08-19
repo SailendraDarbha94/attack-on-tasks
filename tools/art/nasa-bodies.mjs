@@ -59,7 +59,7 @@ function circleMaskSvg(size, discFrac, feather = 0.015) {
 // a fraction of the output square (padding keeps the feather inside).
 // mode 'lum': crop to bright box, luminance-as-alpha (rings, prominences).
 const JOBS = [
-  { id: 'sun', mode: 'lum', size: 1024, pad: 0.02, blackout: [[0, 0.935, 0.55, 0.065]] },
+  { id: 'sun', mode: 'lum', size: 1024, pad: 0.03, file: 'sun-171.jpg', modulate: { brightness: 1.14, saturation: 1.3 }, blackout: [[0, 0.935, 0.55, 0.065]] },
   { id: 'mercury', mode: 'disc', size: 512 },
   { id: 'venus', mode: 'disc', size: 512 },
   { id: 'earth', mode: 'disc', size: 512 },
@@ -74,7 +74,7 @@ const JOBS = [
 
 const manifest = {};
 for (const job of JOBS) {
-  let src = path.join(staging, `${job.id}.jpg`);
+  let src = path.join(staging, job.file ?? `${job.id}.jpg`);
   if (job.blackout) {
     // erase margin captions before anything measures brightness
     const meta0 = await sharp(src).metadata();
@@ -90,26 +90,30 @@ for (const job of JOBS) {
     src = clean;
   }
   const box = await brightBox(src);
-  // pad out to a square with black borders (sources sit on black space, so
-  // the seam is invisible) rather than cropping, which would cut wide rings
+  // sharp reorders operations inside one pipeline (extend always lands after
+  // resize), so every geometric stage gets its own instance via toBuffer
   const side = Math.max(box.width, box.height);
   const pad = job.mode === 'disc' ? 0.03 : (job.pad ?? 0.04);
   const target = Math.round(side * (1 + 2 * pad));
-  const addW = target - box.width;
-  const addH = target - box.height;
-  let img = sharp(src).extract(box);
+  let buf = await sharp(src).extract(box).toBuffer();
   if (job.mode === 'disc' && box.width !== box.height) {
-    img = sharp(await img.resize(side, side, { fit: 'fill' }).toBuffer());
+    // disc sources can carry non-square pixel geometry (Voyager vidicon):
+    // force the bright box square so the disc is round
+    buf = await sharp(buf).resize(side, side, { fit: 'fill' }).toBuffer();
   }
-  img = img
+  const w = job.mode === 'disc' ? side : box.width;
+  const h = job.mode === 'disc' ? side : box.height;
+  buf = await sharp(buf)
     .extend({
-      top: Math.floor((job.mode === 'disc' ? target - side : addH) / 2),
-      bottom: Math.ceil((job.mode === 'disc' ? target - side : addH) / 2),
-      left: Math.floor((job.mode === 'disc' ? target - side : addW) / 2),
-      right: Math.ceil((job.mode === 'disc' ? target - side : addW) / 2),
+      top: Math.floor((target - h) / 2),
+      bottom: Math.ceil((target - h) / 2),
+      left: Math.floor((target - w) / 2),
+      right: Math.ceil((target - w) / 2),
       background: { r: 0, g: 0, b: 0 },
     })
-    .resize(job.size, job.size, { fit: 'fill' });
+    .toBuffer();
+  let img = sharp(buf).resize(job.size, job.size, { fit: 'fill' });
+  if (job.modulate) img = img.modulate(job.modulate);
 
   let discFrac;
   if (job.mode === 'disc') {

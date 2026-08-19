@@ -35,7 +35,7 @@ import { BODY_SPRITES } from '@/components/bodyImages.gen';
 import { CometGlyph } from '@/components/CometGlyph';
 import { DustField } from '@/components/DustField';
 import { FlareEffect } from '@/components/FlareEffect';
-import { NebulaBand, Starfield, useOrbit, useOrbitOcclusion } from '@/components/SkyAmbience';
+import { Starfield, useOrbitOcclusion } from '@/components/SkyAmbience';
 import { useShake } from '@/components/useShake';
 import { palette, spacing } from '@/constants/theme';
 import { COMETS } from '@/content/comets';
@@ -63,11 +63,11 @@ const MAX_ON_PLANE = 5;
 
 // Where the star sits in the measured scene: horizontally centred, low, so the
 // plane opens away from the eye.
-const STAR_Y = 0.74;
+const STAR_Y = 0.55;
 
 // Home never moves: Earth holds this anchor whatever else the plane shows.
-const EARTH_X = 0.62;
-const EARTH_Y = 0.58;
+const TILT = 0.42; // the plane seen from ~25 degrees above
+const EARTH_PHASE = 2.35; // lower-left of the outermost ring, on the near side
 
 const DAY = 24 * HOUR;
 
@@ -159,16 +159,23 @@ export default function OrreryScreen() {
   const [planeW, setPlaneW] = useState(0);
   const starX = planeW / 2;
   const starY = Math.round(planeH * STAR_Y);
-  const earthX = Math.round(planeW * EARTH_X);
-  const earthY = Math.round(planeH * EARTH_Y);
+  // Earth rides the outermost ring — the one that frames the whole orrery
+  const earthRx = Math.max(60, planeW / 2 - 42);
+  const earthRy = Math.min(
+    earthRx * TILT,
+    Math.max(24, planeH - starY - 64),
+    Math.max(24, starY - 40),
+  );
+  const earthX = Math.round(starX + earthRx * Math.cos(EARTH_PHASE));
+  const earthY = Math.round(starY + earthRy * Math.sin(EARTH_PHASE));
   // the corona is the only thing on screen that reads luminosity directly
   const coronaR = Math.min(
     Math.max(52, 44 + game.luminosity * 15),
-    Math.max(52, Math.min(planeW * 0.46, planeH * 0.46)),
+    Math.max(52, Math.min(planeW * 0.42, planeH * 0.38)),
   );
   const rings = useMemo(
-    () => orbitRings(onPlane.length, planeW, planeH, starY),
-    [onPlane.length, planeW, planeH, starY],
+    () => orbitRings(onPlane.length, planeH, starY, earthRx),
+    [onPlane.length, planeH, starY, earthRx],
   );
 
   // the observer's own drift; layers behind the plane move at their own rate
@@ -208,7 +215,8 @@ export default function OrreryScreen() {
           </Link>
         )}
 
-        {/* the plane: your star low at the focus, everything due in orbit around it */}
+        {/* the plane: the star at the centre, the whole system inclined —
+            worlds truly pass behind it on the far half of their rings */}
         <View
           style={styles.plane}
           onLayout={(e) => {
@@ -220,18 +228,6 @@ export default function OrreryScreen() {
             <>
               <Animated.View pointerEvents="none" style={[styles.fill, skyDrift]}>
                 <Starfield />
-                <NebulaBand
-                  top={Math.round(planeH * 0.1)}
-                  height={92}
-                  opacity={0.5}
-                  duration={31_000}
-                />
-                <NebulaBand
-                  top={Math.round(planeH * 0.48)}
-                  height={58}
-                  opacity={0.3}
-                  duration={44_000}
-                />
               </Animated.View>
               <DustField width={planeW} height={planeH} />
 
@@ -248,15 +244,18 @@ export default function OrreryScreen() {
                 />
               ))}
 
-              <StarCore
-                size={coronaR * 2}
-                style={{ left: starX - coronaR, top: starY - coronaR }}
-              />
-
               <Canvas
                 pointerEvents="none"
                 style={[styles.fill, { width: planeW, height: planeH }]}
               >
+                <OrbitRing
+                  cx={starX}
+                  cy={starY}
+                  rx={earthRx}
+                  ry={earthRy}
+                  color={EARTH.color}
+                  drift={0}
+                />
                 {onPlane.map((state, i) => (
                   <OrbitRing
                     key={state.world.id}
@@ -269,6 +268,11 @@ export default function OrreryScreen() {
                   />
                 ))}
               </Canvas>
+
+              <StarCore
+                size={coronaR * 2}
+                style={{ left: starX - coronaR, top: starY - coronaR }}
+              />
 
               {incoming.length > 0 && (
                 <Canvas
@@ -433,15 +437,15 @@ interface Ring {
   ry: number;
 }
 
-// Rings are spread across whatever room the measured plane has, innermost
-// first, and the near half of every ellipse has to stay inside the frame.
-function orbitRings(count: number, planeW: number, planeH: number, starY: number): Ring[] {
-  const maxRx = Math.max(44, planeW / 2 - 34);
-  const minRx = Math.max(42, maxRx * 0.36);
-  const maxRy = Math.max(8, planeH - starY - 34);
+// Rings are spread inside Earth's, innermost first, all at the shared tilt;
+// both halves of every ellipse must clear the frame's top and bottom.
+function orbitRings(count: number, planeH: number, starY: number, earthRx: number): Ring[] {
+  const maxRx = Math.max(44, earthRx * 0.78);
+  const minRx = Math.max(40, maxRx * 0.42);
+  const maxRy = Math.max(10, Math.min(starY - 30, planeH - starY - 40));
   return Array.from({ length: count }, (_, i) => {
     const rx = count === 1 ? (minRx + maxRx) / 2 : minRx + ((maxRx - minRx) * i) / (count - 1);
-    return { rx, ry: Math.min(rx * 0.3, maxRy) };
+    return { rx, ry: Math.min(rx * TILT, maxRy) };
   });
 }
 
@@ -470,7 +474,7 @@ function StarCore({ size, style }: { size: number; style: { left: number; top: n
   }));
 
   const c = size / 2;
-  const disc = Math.max(14, size * 0.17); // the photosphere itself
+  const disc = Math.max(14, size * 0.21); // the photosphere itself
   const sunImg = useImage(BODY_SPRITES.sun.source);
   // the sprite's bright box runs a little past the disc: limb prominences
   const photoSide = (disc * 2) / BODY_SPRITES.sun.discFrac;
@@ -581,25 +585,29 @@ function OrbitingWorld({
   onPress: () => void;
 }) {
   const pt = Math.min(56, Math.max(20, state.body.glyphPt));
-  const orbit = useOrbit({
+  const orbit = useOrbitOcclusion({
     periodMs: 20_000 + slot * 11_000,
     phase: slot * 2.1 + 0.6,
     radiusX: rx,
     radiusY: ry,
+    depthScale: 0.24,
   });
+  const box = { left: cx - pt / 2, top: cy - pt / 2, width: pt, height: pt };
 
   return (
-    <Animated.View
-      style={[
-        styles.orbiter,
-        { left: cx - pt / 2, top: cy - pt / 2, width: pt, height: pt },
-        orbit,
-      ]}
-    >
-      <Pressable onPress={onPress} hitSlop={12}>
+    <>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.orbiter, styles.farSide, box, orbit.orbit, orbit.back]}
+      >
         <BodyGlyph body={state.body} drift={state.drift} />
-      </Pressable>
-    </Animated.View>
+      </Animated.View>
+      <Animated.View style={[styles.orbiter, styles.nearSide, box, orbit.orbit, orbit.front]}>
+        <Pressable onPress={onPress} hitSlop={12}>
+          <BodyGlyph body={state.body} drift={state.drift} />
+        </Pressable>
+      </Animated.View>
+    </>
   );
 }
 
@@ -625,8 +633,8 @@ function CrossingComet({
   const height = Math.round(planeH * 0.46);
   const lane =
     slot === 0
-      ? { left: -Math.round(planeW * 0.04), top: Math.round(planeH * 0.02), rotate: '-7deg' }
-      : { left: Math.round(planeW * 0.46), top: Math.round(planeH * 0.08), rotate: '9deg' };
+      ? { left: -Math.round(planeW * 0.04), top: -Math.round(planeH * 0.12), rotate: '-7deg' }
+      : { left: Math.round(planeW * 0.46), top: -Math.round(planeH * 0.05), rotate: '9deg' };
 
   return (
     <Pressable
@@ -773,7 +781,7 @@ function InboundAsteroid({
   const spawn = spawnPoint(state.asteroid.id, earthX, earthY, planeW, planeH);
   const x = spawn.x + (earthX - spawn.x) * state.progress;
   const y = spawn.y + (earthY - spawn.y) * state.progress;
-  const size = Math.round(18 + 8 * state.progress);
+  const size = Math.round(14 + 30 * state.progress);
 
   return (
     <Pressable
@@ -1394,9 +1402,18 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 200,
     marginTop: spacing.sm,
+    // comets now ride in from beyond the top edge; the plane clips them
+    overflow: 'hidden',
   },
   star: {
     position: 'absolute',
+    zIndex: 2,
+  },
+  farSide: {
+    zIndex: 1,
+  },
+  nearSide: {
+    zIndex: 3,
   },
   orbiter: {
     position: 'absolute',
@@ -1681,6 +1698,7 @@ const styles = StyleSheet.create({
   },
   homeAnchor: {
     position: 'absolute',
+    zIndex: 3,
     width: HOME_W,
     alignItems: 'center',
   },
@@ -1706,6 +1724,7 @@ const styles = StyleSheet.create({
   },
   asteroid: {
     position: 'absolute',
+    zIndex: 3,
     width: 64,
     alignItems: 'center',
     gap: 1,

@@ -234,10 +234,10 @@ export default function ObservationScreen() {
       <Text style={styles.question}>{def.question}</Text>
       <View style={styles.answers}>
         <Pressable style={[styles.answerBtn, styles.fadedBtn]} onPress={() => onAnswer('no')}>
-          <Text style={styles.fadedText}>IT FADED</Text>
+          <Text style={styles.fadedText}>NO</Text>
         </Pressable>
         <Pressable style={[styles.answerBtn, styles.flaredBtn]} onPress={() => onAnswer('yes')}>
-          <Text style={styles.flaredText}>IT FLARED</Text>
+          <Text style={styles.flaredText}>YES</Text>
         </Pressable>
       </View>
       <Text style={styles.honesty}>An honest entry is worth the same whichever way it went.</Text>

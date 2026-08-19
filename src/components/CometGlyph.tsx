@@ -5,14 +5,17 @@ import {
   Canvas,
   Circle,
   Group,
+  Image as SkiaImage,
   LinearGradient,
   Path,
   RadialGradient,
+  useImage,
   vec,
   type SkPoint,
 } from '@shopify/react-native-skia';
 
 import { palette } from '@/constants/theme';
+import { BODY_SPRITES } from './bodyImages.gen';
 import { BARE_NUCLEUS_MASS, MAX_MASS } from '@/engine/system';
 import type { HabitId } from '@/engine/types';
 
@@ -69,6 +72,8 @@ export function CometGlyph({ habit, mass, width, height, bare, style }: CometGly
     [width, height, mass, dust],
   );
   const tint = TINT[habit];
+  const rockImg = useImage(BODY_SPRITES.asteroid.source);
+  const rockSide = (2 * g.rockR * 1.06) / BODY_SPRITES.asteroid.discFrac;
 
   if (!width || !height) return null;
 
@@ -89,7 +94,7 @@ export function CometGlyph({ habit, mass, width, height, bare, style }: CometGly
                     from={vec(g.nx, g.ny)}
                     to={tipOf(g, len, s.bow)}
                     color={color}
-                    alpha={s.alpha}
+                    alpha={s.alpha * (0.7 + 0.55 * g.m)}
                     blur={g.min * 0.035}
                   />
                 );
@@ -108,7 +113,7 @@ export function CometGlyph({ habit, mass, width, height, bare, style }: CometGly
                     from={vec(ox, oy)}
                     to={vec(ox + g.ux * len, oy + g.uy * len)}
                     color={palette.ice}
-                    alpha={s.alpha}
+                    alpha={s.alpha * (0.7 + 0.55 * g.m)}
                     blur={g.min * 0.012}
                   />
                 );
@@ -149,19 +154,32 @@ export function CometGlyph({ habit, mass, width, height, bare, style }: CometGly
         ))}
 
       <Group>
-        <Path path={g.rock} color="#0D111C" />
-        <Path
-          path={g.rock}
-          color={withAlpha(spent ? palette.ice : tint, spent ? 0.45 : 0.3)}
-          style="stroke"
-          strokeWidth={Math.max(0.6, g.min * 0.005)}
+        {rockImg ? (
+          <SkiaImage
+            image={rockImg}
+            x={g.nx - rockSide / 2}
+            y={g.ny - rockSide / 2}
+            width={rockSide}
+            height={rockSide}
+            fit="fill"
+          />
+        ) : (
+          <Path path={g.rock} color="#0D111C" />
+        )}
+        {/* the comet's own light washes its nucleus */}
+        <Circle
+          cx={g.nx}
+          cy={g.ny}
+          r={g.rockR * 1.02}
+          color={withAlpha(spent ? palette.ice : tint, spent ? 0.3 : 0.22)}
+          blendMode="plus"
         />
         {/* the limb turned toward the star */}
         <Circle
           cx={g.nx - g.ux * g.rockR * 0.5}
           cy={g.ny - g.uy * g.rockR * 0.5}
-          r={g.rockR * 0.3}
-          color={withAlpha(spent ? palette.ice : tint, 0.4)}
+          r={g.rockR * 0.34}
+          color={withAlpha(spent ? palette.ice : tint, 0.5)}
         >
           <BlurMask blur={g.rockR * 0.45} style="normal" />
         </Circle>
@@ -208,6 +226,7 @@ interface Geometry {
   px: number;
   py: number;
   min: number;
+  m: number;
   tail: number;
   coma: number;
   rock: string;
@@ -246,12 +265,12 @@ function layout(width: number, height: number, mass: number, profile: Streaks): 
       );
     }
   }
-  const tail = Number.isFinite(span) ? span * (0.34 + 0.62 * m) : 0;
+  const tail = Number.isFinite(span) ? span * (0.16 + 0.9 * m) : 0;
 
   const room = Math.min(nx, ny, width - nx, height - ny);
-  const coma = Math.min(min * (0.12 + 0.2 * m), room * 0.6);
+  const coma = Math.min(min * (0.07 + 0.32 * m), room * 0.7);
 
-  const rockR = min * 0.08;
+  const rockR = min * (0.055 + 0.05 * m);
   const jetAngle = Math.atan2(-uy, -ux);
   const jets = [-1, 1].map((side) => {
     const a = jetAngle + side * 0.36;
@@ -260,7 +279,7 @@ function layout(width: number, height: number, mass: number, profile: Streaks): 
     return { dx, dy, len: Math.min(min * 0.3, reach(nx, ny, dx, dy, width, height, pad)) };
   });
 
-  return { nx, ny, ux, uy, px, py, min, tail, coma, rock: lumpyPath(nx, ny, rockR), rockR, jets };
+  return { nx, ny, ux, uy, px, py, min, m, tail, coma, rock: lumpyPath(nx, ny, rockR), rockR, jets };
 }
 
 /** How far a ray from (x,y) can travel before it leaves the padded frame. */

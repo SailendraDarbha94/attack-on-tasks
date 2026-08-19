@@ -3,6 +3,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import {
   BlurMask,
   Canvas,
+  Circle,
   Image as SkiaImage,
   LinearGradient,
   Path,
@@ -72,6 +73,10 @@ export function AsteroidGlyph({ size, urgency = 0, style }: AsteroidGlyphProps) 
         </Path>
       )}
 
+      {/* the approach heats the whole rock */}
+      <Circle cx={g.nx} cy={g.ny} r={g.rockR * (1.4 + 1.3 * u)} color={withAlpha(palette.flare, 0.08 + 0.3 * u)}>
+        <BlurMask blur={g.rockR * 0.8} style="normal" />
+      </Circle>
       {rock ? (
         <SkiaImage
           image={rock}
@@ -82,6 +87,15 @@ export function AsteroidGlyph({ size, urgency = 0, style }: AsteroidGlyphProps) 
           fit="fill"
         />
       ) : null}
+      {/* the leading limb burns first */}
+      <Circle
+        cx={g.nx + HEAD.x * g.rockR * 0.75}
+        cy={g.ny + HEAD.y * g.rockR * 0.75}
+        r={g.rockR * 0.55}
+        color={withAlpha(palette.flare, 0.16 + 0.5 * u)}
+      >
+        <BlurMask blur={g.rockR * 0.55} style="normal" />
+      </Circle>
     </Canvas>
   );
 }
@@ -124,7 +138,7 @@ function layout(size: number, u: number): Geometry {
     hotTrail: ribbon(ox, oy, dx, dy, len * 0.92, (t) => rockR * 0.28 * Math.pow(1 - t, 0.6)),
     trailFrom: vec(ox, oy),
     trailTo: vec(ox + dx * len, oy + dy * len),
-    trailAlpha: 0.18 + 0.5 * u,
+    trailAlpha: 0.25 + 0.6 * u,
     hot,
     blur: Math.max(0.5, s * 0.015),
   };

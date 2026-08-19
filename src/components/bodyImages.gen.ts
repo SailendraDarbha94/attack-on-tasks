@@ -7,7 +7,7 @@ export interface BodySprite {
 }
 
 export const BODY_SPRITES = {
-  sun: { source: require('../../assets/bodies/sun.png'), discFrac: 0.9615 },
+  sun: { source: require('../../assets/bodies/sun.png'), discFrac: 0.9435 },
   mercury: { source: require('../../assets/bodies/mercury.png'), discFrac: 0.9437 },
   venus: { source: require('../../assets/bodies/venus.png'), discFrac: 0.9433 },
   earth: { source: require('../../assets/bodies/earth.png'), discFrac: 0.9434 },
