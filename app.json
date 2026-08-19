@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Attack on Tasks",
-    "slug": "attack-on-tasks",
+    "name": "Orrery",
+    "slug": "orrery",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "attackontasks",
+    "scheme": "orrery",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B120E",
+    "backgroundColor": "#05070E",
     "ios": {
       "bundleIdentifier": "com.sailendradarbha.attackontasks",
       "appleTeamId": "VT4A9ETST9",
@@ -15,7 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B120E",
+        "backgroundColor": "#05070E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -31,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B120E",
+          "backgroundColor": "#05070E",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }

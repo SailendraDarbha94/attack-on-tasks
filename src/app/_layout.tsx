@@ -6,7 +6,7 @@ import { palette } from '@/constants/theme';
 import { onNotificationTap } from '@/notifications/scheduler';
 import { useGame } from '@/state/game';
 
-const ForestTheme = {
+const SkyTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
@@ -14,8 +14,8 @@ const ForestTheme = {
     card: palette.surface,
     text: palette.text,
     border: palette.border,
-    primary: palette.steel,
-    notification: palette.blood,
+    primary: palette.ice,
+    notification: palette.flare,
   },
 };
 
@@ -24,11 +24,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrate().catch((err) => console.error('hydrate failed', err));
-    return onNotificationTap(() => router.push('/encounter'));
+    return onNotificationTap(() => router.push('/observation'));
   }, [hydrate]);
 
   return (
-    <ThemeProvider value={ForestTheme}>
+    <ThemeProvider value={SkyTheme}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{

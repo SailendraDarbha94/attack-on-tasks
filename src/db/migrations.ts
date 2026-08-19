@@ -26,6 +26,15 @@ export const MIGRATIONS: readonly string[] = [
     value TEXT NOT NULL
   );
   `,
+  `
+  CREATE TABLE asteroids (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    due_ts INTEGER NOT NULL,
+    created_ts INTEGER NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0
+  );
+  `,
 ];
 
 export async function migrate(db: SQLiteDatabase): Promise<void> {

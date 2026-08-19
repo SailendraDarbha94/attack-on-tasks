@@ -1,13 +1,13 @@
-// Forest of the Giant Trees palette — dark, damp, lantern-lit.
+// Night sky at the eyepiece — ink, ice, and one warm star.
 export const palette = {
-  bg: '#0B120E',
-  surface: '#131E17',
-  raised: '#1B2A20',
-  border: '#26382C',
-  text: '#E7EFE8',
-  textDim: '#8FA396',
-  steel: '#8FD6C3',
-  blood: '#C24438',
+  bg: '#05070E',
+  surface: '#0C1120',
+  raised: '#151C30',
+  border: '#232C46',
+  text: '#E8ECF7',
+  textDim: '#8B96B4',
+  ice: '#8FC7D6',
+  flare: '#E4703A',
   amber: '#D9A441',
 } as const;
 

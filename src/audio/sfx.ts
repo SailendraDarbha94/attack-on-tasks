@@ -2,10 +2,11 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 // Fire-and-forget game SFX. Players persist for the app's lifetime;
 // sound must never be able to crash the game, hence the broad catches.
+// Filenames are still the originals; the waveforms get retuned later.
 const SOURCES = {
-  strike: require('../../assets/sfx/strike.wav'),
-  kill: require('../../assets/sfx/kill.wav'),
-  grow: require('../../assets/sfx/grow.wav'),
+  pulse: require('../../assets/sfx/strike.wav'),
+  resolve: require('../../assets/sfx/kill.wav'),
+  surge: require('../../assets/sfx/grow.wav'),
 } as const;
 
 export type SfxName = keyof typeof SOURCES;
@@ -17,7 +18,7 @@ export function playSfx(name: SfxName): void {
   try {
     if (!modeSet) {
       modeSet = true;
-      // the blow should land even with the ringer switched off
+      // the measurement should land even with the ringer switched off
       setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     }
     let player = players.get(name);

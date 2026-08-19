@@ -3,8 +3,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { palette, spacing } from '@/constants/theme';
-import { TITANS } from '@/content/titans';
-import { HABITS } from '@/engine/titanMath';
+import { COMETS } from '@/content/comets';
+import { HABITS } from '@/engine/system';
 import { useGame } from '@/state/game';
 
 const CADENCES = [2, 3, 4, 6];
@@ -15,13 +15,13 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.topRow}>
-        <Text style={styles.overline}>GEAR & WATCH</Text>
+        <Text style={styles.overline}>INSTRUMENTS & HOURS</Text>
         <Pressable hitSlop={12} onPress={() => router.back()}>
           <Text style={styles.done}>DONE</Text>
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>Titans emerge every</Text>
+      <Text style={styles.sectionTitle}>Observe every</Text>
       <View style={styles.chips}>
         {CADENCES.map((h) => (
           <Pressable
@@ -38,7 +38,7 @@ export default function SettingsScreen() {
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>The watch runs</Text>
+      <Text style={styles.sectionTitle}>Observing hours</Text>
       <View style={styles.row}>
         <Stepper
           label="from"
@@ -51,24 +51,22 @@ export default function SettingsScreen() {
           onChange={(v) => updateSettings({ dayEndHour: v })}
         />
       </View>
-      <Text style={styles.hint}>
-        Encounters only spawn during the watch. Outside it, the forest sleeps.
-      </Text>
+      <Text style={styles.hint}>Windows only open during observing hours.</Text>
 
-      <Text style={styles.sectionTitle}>Bosses on the field</Text>
+      <Text style={styles.sectionTitle}>Comets tracked</Text>
       {HABITS.map((habit) => (
         <View key={habit} style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>{TITANS[habit].name}</Text>
+          <Text style={styles.toggleLabel}>{COMETS[habit].name}</Text>
           <Switch
             value={settings.habitsEnabled[habit]}
             onValueChange={(on) => updateSettings({ habitsEnabled: { [habit]: on } })}
-            trackColor={{ true: palette.steel, false: palette.raised }}
+            trackColor={{ true: palette.ice, false: palette.raised }}
             thumbColor={palette.text}
           />
         </View>
       ))}
       <Text style={styles.hint}>
-        Disabling a boss pauses its encounters — it neither grows nor shrinks.
+        Untracking a comet closes its windows — it neither brightens nor thins.
       </Text>
     </SafeAreaView>
   );
@@ -117,7 +115,7 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   done: {
-    color: palette.steel,
+    color: palette.ice,
     fontSize: 12,
     letterSpacing: 2,
     fontWeight: '600',
@@ -142,8 +140,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   chipActive: {
-    backgroundColor: palette.steel,
-    borderColor: palette.steel,
+    backgroundColor: palette.ice,
+    borderColor: palette.ice,
   },
   chipText: {
     color: palette.textDim,
@@ -185,7 +183,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepBtnText: {
-    color: palette.steel,
+    color: palette.ice,
     fontSize: 18,
     fontWeight: '700',
   },

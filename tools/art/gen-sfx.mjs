@@ -1,4 +1,5 @@
-// Procedural SFX: blade strike, kill (strike + steam), ominous grow.
+// Procedural SFX: pulse (an observation), resolve (a return or dispersal),
+// surge (an outburst). Waveforms are still the originals pending a retune.
 // Pure synthesis — no samples, no licensing, tweak and re-run freely.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';

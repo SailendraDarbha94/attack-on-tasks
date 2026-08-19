@@ -1,7 +1,7 @@
 import { variantIndex } from '@/engine/schedule';
 
-// Lock-screen copy: always in-universe, never names the habits —
-// the question itself stays inside the app.
+// Lock-screen copy: always in-world, never names the habits — the question
+// itself stays inside the app.
 export interface NotificationLine {
   title: string;
   body: string;
@@ -9,60 +9,60 @@ export interface NotificationLine {
 
 export const NOTIFICATION_LINES: NotificationLine[] = [
   {
-    title: 'Titans emerge from the treeline',
-    body: 'They are waiting between the trunks. Face them.',
+    title: 'Observation window open',
+    body: 'Both comets are above the horizon. Log what you see.',
   },
   {
-    title: 'The ground trembles',
-    body: 'Something big is moving beyond the mist.',
+    title: 'The sky is clear',
+    body: 'No excuses from the weather tonight.',
   },
   {
-    title: 'Two shadows in the clearing',
-    body: 'They already know you are here, Scout.',
+    title: 'Two objects on the plate',
+    body: 'They have been tracked this long. Keep the record.',
   },
   {
-    title: 'The forest has gone quiet',
-    body: 'Birds scattered from the canopy. You know what that means.',
+    title: 'Your star is burning',
+    body: 'Every hour it burns, something out there gets smaller.',
   },
   {
-    title: 'Gas at full. Blades sharp.',
-    body: 'The gear is ready, even if you are not.',
+    title: 'Scheduled measurement',
+    body: 'It takes ten seconds and it is the whole instrument.',
   },
   {
-    title: 'A grin between the trees',
-    body: 'It smiles because it thinks you will blink first.',
+    title: 'Ashfall is in frame',
+    body: 'Warm dust, curved tail. Note it honestly.',
   },
   {
-    title: 'You hear a bottle slosh',
-    body: 'Cheers, mate — or not. Your call, Scout.',
+    title: 'Stillwater crosses tonight',
+    body: 'Straight ion tail, pointing away from the light.',
   },
   {
-    title: 'Smoke rises past the branches',
-    body: 'Someone is exhaling in the mist. Make it regret that.',
+    title: 'The log has a gap in it',
+    body: 'Gaps are just missing data. Data is easy to add.',
   },
   {
-    title: 'The watch continues',
-    body: 'Every few hours, the same question. That is how walls get built.',
+    title: 'Perihelion approaches',
+    body: 'Nothing comes apart without a long run of small measurements first.',
   },
   {
-    title: 'Survey Corps report due',
-    body: 'A Scout who reports honestly outlives one who does not.',
+    title: 'Keeper, the plane is turning',
+    body: 'Worlds are coming due. So is the question.',
   },
   {
-    title: 'Dusk in the Forest of Giant Trees',
-    body: 'Lanterns lit. Eyes glowing back.',
+    title: 'Ephemeris check',
+    body: 'Where things actually are, versus where you assumed.',
   },
   {
-    title: 'Your horse is still missing',
-    body: 'Your blades are not. To the clearing.',
+    title: 'Clear night, no moon',
+    body: 'The best conditions you are going to get.',
   },
   {
-    title: 'Wings of Freedom',
-    body: 'One honest answer at a time, Scout.',
+    title: 'One measurement, either result',
+    body: 'A flare recorded is worth exactly as much as a fade.',
   },
   {
-    title: 'The nape is exposed',
-    body: 'Strike while it lingers.',
+    title: 'The instrument is warm',
+    body: 'It only works if someone is at the eyepiece.',
   },
 ];
 

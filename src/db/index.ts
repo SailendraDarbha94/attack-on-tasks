@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 import { DEFAULT_SETTINGS, normalizeSettings } from '@/engine/schedule';
-import type { Chore, GameEvent, ScheduleSettings } from '@/engine/types';
+import type { Asteroid, GameEvent, ScheduleSettings, World } from '@/engine/types';
 import { migrate } from './migrations';
 
 const DB_NAME = 'attack-on-tasks.db';
@@ -78,7 +78,7 @@ export async function saveSettings(settings: ScheduleSettings): Promise<void> {
   await setSetting(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-export async function loadChores(): Promise<Chore[]> {
+export async function loadWorlds(): Promise<World[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{
     id: number;
@@ -94,7 +94,7 @@ export async function loadChores(): Promise<Chore[]> {
   }));
 }
 
-export async function insertChore(name: string, frequencyHours: number): Promise<Chore> {
+export async function insertWorld(name: string, frequencyHours: number): Promise<World> {
   const db = await getDb();
   const createdTs = Date.now();
   const result = await db.runAsync(
@@ -106,13 +106,41 @@ export async function insertChore(name: string, frequencyHours: number): Promise
   return { id: result.lastInsertRowId, name, frequencyHours, createdTs };
 }
 
-export async function archiveChore(id: number): Promise<void> {
+export async function archiveWorld(id: number): Promise<void> {
   const db = await getDb();
   await db.runAsync('UPDATE chores SET archived = 1 WHERE id = ?', id);
 }
 
-// First app open marks the moment the Scout woke up in the forest —
-// slots before it never existed.
+export async function loadAsteroids(): Promise<Asteroid[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{
+    id: number;
+    name: string;
+    due_ts: number;
+    created_ts: number;
+  }>('SELECT id, name, due_ts, created_ts FROM asteroids WHERE archived = 0 ORDER BY due_ts');
+  return rows.map((r) => ({ id: r.id, name: r.name, dueTs: r.due_ts, createdTs: r.created_ts }));
+}
+
+export async function insertAsteroid(name: string, dueTs: number): Promise<Asteroid> {
+  const db = await getDb();
+  const createdTs = Date.now();
+  const result = await db.runAsync(
+    'INSERT INTO asteroids (name, due_ts, created_ts) VALUES (?, ?, ?)',
+    name,
+    dueTs,
+    createdTs,
+  );
+  return { id: result.lastInsertRowId, name, dueTs, createdTs };
+}
+
+export async function archiveAsteroid(id: number): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE asteroids SET archived = 1 WHERE id = ?', id);
+}
+
+// First app open marks the moment the keeper first looked up —
+// windows before it never existed.
 export async function ensureGameStart(): Promise<number> {
   const raw = await getSetting(GAME_START_KEY);
   if (raw) return Number(raw);

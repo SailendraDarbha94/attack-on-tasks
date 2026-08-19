@@ -1,10 +1,11 @@
-import { HABITS } from './titanMath';
+import { HABITS } from './system';
+import { HOUR } from './time';
 import type { GameEvent, PendingEncounter, ScheduleSettings } from './types';
 
-export const HOUR = 3_600_000;
+export { HOUR } from './time';
 
-// Unanswered encounters older than this expire neutrally —
-// a busy day is not a failed day.
+// Unanswered windows older than this pass neutrally — cloud cover.
+// A busy day is not a failed day.
 export const EXPIRY_HOURS = 12;
 
 export const DEFAULT_SETTINGS: ScheduleSettings = {
@@ -57,8 +58,7 @@ function resolvedKeys(events: readonly GameEvent[]): Set<string> {
   return keys;
 }
 
-// Unresolved slots still inside the expiry window — the Titans lingering
-// in the forest, oldest first.
+// Unresolved windows still inside the expiry horizon, oldest first.
 export function pendingEncounters(
   events: readonly GameEvent[],
   sinceTs: number,
