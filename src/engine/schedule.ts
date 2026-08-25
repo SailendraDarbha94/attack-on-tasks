@@ -13,7 +13,11 @@ export const DEFAULT_SETTINGS: ScheduleSettings = {
   dayStartHour: 9,
   dayEndHour: 23,
   habitsEnabled: { smoke: true, drink: true },
+  arkKeeper: 'noah',
+  arkSouls: 1000,
 };
+
+const KEEPERS = ['noah', 'brahma', 'jesus'] as const;
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
@@ -23,7 +27,9 @@ export function normalizeSettings(s: ScheduleSettings): ScheduleSettings {
   const cadenceHours = clamp(Math.round(s.cadenceHours), 1, 12);
   const dayStartHour = clamp(Math.round(s.dayStartHour), 0, 22);
   const dayEndHour = clamp(Math.round(s.dayEndHour), dayStartHour + 1, 23);
-  return { ...s, cadenceHours, dayStartHour, dayEndHour };
+  const arkSouls = clamp(Math.round(s.arkSouls ?? 1000), 100, 100_000);
+  const arkKeeper = KEEPERS.includes(s.arkKeeper) ? s.arkKeeper : 'noah';
+  return { ...s, cadenceHours, dayStartHour, dayEndHour, arkSouls, arkKeeper };
 }
 
 // Slots run at local dayStartHour, stepping cadenceHours, while <= dayEndHour.

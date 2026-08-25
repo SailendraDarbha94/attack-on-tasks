@@ -41,7 +41,7 @@ import { palette, spacing } from '@/constants/theme';
 import { COMETS } from '@/content/comets';
 import { reportLine } from '@/content/report';
 import { asteroids, type AsteroidState } from '@/engine/asteroids';
-import { BODY_BY_ID, EARTH } from '@/engine/bodies';
+import { BODY_BY_ID, EARTH, type BodyId } from '@/engine/bodies';
 import { HOUR, nextSlot } from '@/engine/schedule';
 import {
   HABITS,
@@ -134,7 +134,7 @@ export default function OrreryScreen() {
   const [cardWorldId, setCardWorldId] = useState<number | null>(null);
   const [cardAsteroidId, setCardAsteroidId] = useState<number | null>(null);
   const [homeOpen, setHomeOpen] = useState(false);
-  const [dailiesOpen, setDailiesOpen] = useState(false);
+  const [cardBodyId, setCardBodyId] = useState<BodyId | null>(null);
   const [chooserOpen, setChooserOpen] = useState(false);
 
   useEffect(() => {
@@ -148,9 +148,11 @@ export default function OrreryScreen() {
 
   const states = worldStates(worldList, events, now);
   const due = states.filter((s) => s.due);
-  const onPlane = due.slice(0, MAX_ON_PLANE);
-  const beyond = due.length - onPlane.length;
-  const ephemeris = states.filter((s) => !s.due);
+  // one planet per cadence: every world of a cadence rides the same body
+  const dueGroups = groupByBody(due);
+  const onPlane = dueGroups.slice(0, MAX_ON_PLANE);
+  const beyond = dueGroups.length - onPlane.length;
+  const ephemeris = groupByBody(states.filter((s) => !s.due));
   const incoming = asteroids(asteroidsList, events, now).filter((a) => a.inbound);
 
   // Proportional scene layout, measured — the plane must never push the
@@ -177,20 +179,6 @@ export default function OrreryScreen() {
     () => orbitRings(onPlane.length, planeH, starY, earthRx),
     [onPlane.length, planeH, starY, earthRx],
   );
-
-  // the observer's own drift; layers behind the plane move at their own rate
-  const cam = useSharedValue(0);
-  useEffect(() => {
-    cam.value = withRepeat(
-      withTiming(1, { duration: 28_000, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(cam);
-  }, [cam]);
-  const skyDrift = useAnimatedStyle(() => ({
-    transform: [{ translateX: (cam.value - 0.5) * 18 }],
-  }));
 
   return (
     <View style={styles.root}>
@@ -226,17 +214,22 @@ export default function OrreryScreen() {
         >
           {planeH > 0 && (
             <>
-              <Animated.View pointerEvents="none" style={[styles.fill, skyDrift]}>
+              <View pointerEvents="none" style={styles.fill}>
                 <Starfield />
-              </Animated.View>
+              </View>
               <DustField width={planeW} height={planeH} />
 
-              {HABITS.filter((habit) => game.comets[habit].alive).map((habit, i) => (
+              {HABITS.filter((habit) => settings.habitsEnabled[habit]).map((habit, i) => (
                 <CrossingComet
                   key={habit}
                   habit={habit}
                   mass={game.comets[habit].mass}
                   bare={game.comets[habit].finisherReady}
+                  forming={!game.comets[habit].alive}
+                  etaMs={(() => {
+                    const at = inbound.find((f) => f.habit === habit)?.at;
+                    return at ? at - now : null;
+                  })()}
                   planeW={planeW}
                   planeH={planeH}
                   slot={i}
@@ -256,15 +249,15 @@ export default function OrreryScreen() {
                   color={EARTH.color}
                   drift={0}
                 />
-                {onPlane.map((state, i) => (
+                {onPlane.map((group, i) => (
                   <OrbitRing
-                    key={state.world.id}
+                    key={group[0].body.id}
                     cx={starX}
                     cy={starY}
                     rx={rings[i].rx}
                     ry={rings[i].ry}
-                    color={state.body.color}
-                    drift={state.drift}
+                    color={group[0].body.color}
+                    drift={Math.min(...group.map((g) => g.drift))}
                   />
                 ))}
               </Canvas>
@@ -303,19 +296,23 @@ export default function OrreryScreen() {
                 y={earthY}
                 population={game.population}
                 onPress={() => setHomeOpen(true)}
-                onMoonPress={() => setDailiesOpen(true)}
+                onMoonPress={() => setCardBodyId('moon')}
               />
 
-              {onPlane.map((state, i) => (
+              {onPlane.map((group, i) => (
                 <OrbitingWorld
-                  key={state.world.id}
-                  state={state}
+                  key={group[0].body.id}
+                  group={group}
                   rx={rings[i].rx}
                   ry={rings[i].ry}
                   slot={i}
                   cx={starX}
                   cy={starY}
-                  onPress={() => setCardWorldId(state.world.id)}
+                  onPress={() =>
+                    group.length === 1
+                      ? setCardWorldId(group[0].world.id)
+                      : setCardBodyId(group[0].body.id)
+                  }
                 />
               ))}
 
@@ -344,18 +341,26 @@ export default function OrreryScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.stripRow}
             >
-              {ephemeris.map((state) => (
+              {ephemeris.map((group) => (
                 <Pressable
-                  key={state.world.id}
+                  key={group[0].body.id}
                   style={styles.stripItem}
-                  onPress={() => setCardWorldId(state.world.id)}
+                  onPress={() =>
+                    group.length === 1
+                      ? setCardWorldId(group[0].world.id)
+                      : setCardBodyId(group[0].body.id)
+                  }
                   hitSlop={6}
                 >
-                  <BodyGlyph body={state.body} size={20} />
+                  <BodyGlyph body={group[0].body} size={20} />
                   <Text style={styles.stripName} numberOfLines={1}>
-                    {state.world.name}
+                    {group.length === 1
+                      ? group[0].world.name
+                      : `${group[0].body.name} · ${group.length}`}
                   </Text>
-                  <Text style={styles.stripDue}>{formatUntil(state.dueTs - now)}</Text>
+                  <Text style={styles.stripDue}>
+                    {formatUntil(Math.min(...group.map((g) => g.dueTs)) - now)}
+                  </Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -390,23 +395,27 @@ export default function OrreryScreen() {
                 ? `Next window in ${formatCountdown(upcoming - now)}`
                 : 'No further windows scheduled.'}
           </Text>
-          {inbound.map((fragment) => (
-            <Text key={fragment.habit} style={styles.inbound}>
-              {COMETS[fragment.habit].name} dispersed. Another fragment inbound in{' '}
-              {formatHours(fragment.at - now)}.
-            </Text>
-          ))}
+          {inbound.map((fragment) => {
+            const forming = game.comets[fragment.habit].mass;
+            return (
+              <Text key={fragment.habit} style={styles.inbound}>
+                {forming > 0
+                  ? `${COMETS[fragment.habit].name} fell — a fragment forms at mass ${Math.round(forming)}, inbound in ${formatHours(fragment.at - now)}. It eats what you do.`
+                  : `${COMETS[fragment.habit].name} dispersed. Another fragment inbound in ${formatHours(fragment.at - now)}.`}
+              </Text>
+            );
+          })}
         </View>
 
         <WorldCard worldId={cardWorldId} onClose={() => setCardWorldId(null)} />
         <CometCard habit={cardHabit} onClose={() => setCardHabit(null)} />
         <AsteroidCard asteroidId={cardAsteroidId} onClose={() => setCardAsteroidId(null)} />
         <HomeCard visible={homeOpen} onClose={() => setHomeOpen(false)} />
-        <DailiesCard
-          visible={dailiesOpen}
+        <BodyCard
+          bodyId={cardBodyId}
           states={states}
           now={now}
-          onClose={() => setDailiesOpen(false)}
+          onClose={() => setCardBodyId(null)}
           onOpenWorld={(id) => setCardWorldId(id)}
         />
         <TrackChooser visible={chooserOpen} onClose={() => setChooserOpen(false)} />
@@ -430,6 +439,19 @@ function skyTint(hour: number): string {
   if (hour < 19) return 'rgba(120, 74, 34, 0.16)';
   if (hour < 22) return 'rgba(16, 24, 54, 0.3)';
   return 'rgba(7, 11, 30, 0.42)';
+}
+
+// Worlds sharing a cadence share a body; innermost (fastest) cadence first.
+function groupByBody(list: WorldState[]): WorldState[][] {
+  const byBody = new Map<BodyId, WorldState[]>();
+  for (const state of list) {
+    const group = byBody.get(state.body.id);
+    if (group) group.push(state);
+    else byBody.set(state.body.id, [state]);
+  }
+  return [...byBody.values()]
+    .map((group) => group.sort((a, b) => a.dueTs - b.dueTs))
+    .sort((a, b) => a[0].body.hours - b[0].body.hours);
 }
 
 interface Ring {
@@ -476,7 +498,7 @@ function StarCore({ size, style }: { size: number; style: { left: number; top: n
   const c = size / 2;
   const disc = Math.max(14, size * 0.21); // the photosphere itself
   const sunImg = useImage(BODY_SPRITES.sun.source);
-  // the sprite's bright box runs a little past the disc: limb prominences
+  // the sprite runs a little past the disc: its own faded coronal fringe
   const photoSide = (disc * 2) / BODY_SPRITES.sun.discFrac;
   const rotA = useDerivedValue(() => [{ rotate: spin.value * Math.PI * 2 }]);
 
@@ -497,16 +519,15 @@ function StarCore({ size, style }: { size: number; style: { left: number; top: n
               'rgba(228, 112, 58, 0.1)',
               'rgba(228, 112, 58, 0)',
             ]}
-            positions={[0, 0.3, 0.58, 1]}
+            positions={[0, 0.26, 0.5, 0.82]}
           />
         </Circle>
-        <Circle cx={c} cy={c} r={disc * 1.75} color="rgba(244, 168, 84, 0.3)">
-          <BlurMask blur={disc * 0.8} style="normal" />
+        <Circle cx={c} cy={c} r={disc * 1.45} color="rgba(244, 168, 84, 0.3)">
+          <BlurMask blur={disc * 0.45} style="normal" />
         </Circle>
 
-        {/* the photosphere itself: SDO/AIA 304, the sun as it actually was
-            the day this build was cut — prominences ride the limb in the
-            photograph, so nothing needs drawing on top */}
+        {/* the photosphere: SDO's 171 channel run furnace-hot, white heart
+            baked in offline — the sun as it actually was, burning harder */}
         <Group origin={vec(c, c)} transform={rotA}>
           {sunImg ? (
             <SkiaImage
@@ -568,7 +589,7 @@ function OrbitRing({
 
 // ── a due world carried around its arc; tap to open its card ──────────────
 function OrbitingWorld({
-  state,
+  group,
   rx,
   ry,
   slot,
@@ -576,7 +597,7 @@ function OrbitingWorld({
   cy,
   onPress,
 }: {
-  state: WorldState;
+  group: WorldState[];
   rx: number;
   ry: number;
   slot: number;
@@ -584,7 +605,9 @@ function OrbitingWorld({
   cy: number;
   onPress: () => void;
 }) {
-  const pt = Math.min(56, Math.max(20, state.body.glyphPt));
+  const body = group[0].body;
+  const drift = Math.min(...group.map((g) => g.drift));
+  const pt = Math.min(56, Math.max(20, body.glyphPt));
   const orbit = useOrbitOcclusion({
     periodMs: 20_000 + slot * 11_000,
     phase: slot * 2.1 + 0.6,
@@ -600,11 +623,16 @@ function OrbitingWorld({
         pointerEvents="none"
         style={[styles.orbiter, styles.farSide, box, orbit.orbit, orbit.back]}
       >
-        <BodyGlyph body={state.body} drift={state.drift} />
+        <BodyGlyph body={body} drift={drift} />
       </Animated.View>
       <Animated.View style={[styles.orbiter, styles.nearSide, box, orbit.orbit, orbit.front]}>
         <Pressable onPress={onPress} hitSlop={12}>
-          <BodyGlyph body={state.body} drift={state.drift} />
+          <BodyGlyph body={body} drift={drift} />
+          {group.length > 1 && (
+            <View style={styles.orbBadge}>
+              <Text style={styles.orbBadgeText}>{group.length}</Text>
+            </View>
+          )}
         </Pressable>
       </Animated.View>
     </>
@@ -616,6 +644,8 @@ function CrossingComet({
   habit,
   mass,
   bare,
+  forming = false,
+  etaMs = null,
   planeW,
   planeH,
   slot,
@@ -624,6 +654,9 @@ function CrossingComet({
   habit: HabitId;
   mass: number;
   bare: boolean;
+  /** dispersed: what crosses here is the next fragment, still far out */
+  forming?: boolean;
+  etaMs?: number | null;
   planeW: number;
   planeH: number;
   slot: number;
@@ -635,6 +668,32 @@ function CrossingComet({
     slot === 0
       ? { left: -Math.round(planeW * 0.04), top: -Math.round(planeH * 0.12), rotate: '-7deg' }
       : { left: Math.round(planeW * 0.46), top: -Math.round(planeH * 0.05), rotate: '9deg' };
+
+  if (forming) {
+    // the fragment is out there, small and far — the sky is never empty
+    return (
+      <Pressable
+        style={[
+          styles.cometLane,
+          styles.formingLane,
+          { left: lane.left, top: lane.top, width, height, transform: [{ rotate: lane.rotate }] },
+        ]}
+        onPress={onPress}
+      >
+        <CometGlyph
+          habit={habit}
+          mass={mass > 0 ? mass : 100}
+          width={Math.round(width * 0.48)}
+          height={Math.round(height * 0.48)}
+          style={{ opacity: 0.5 }}
+        />
+        <Text style={styles.formingCaption}>
+          {COMETS[habit].name.toUpperCase()} · FORMING
+          {etaMs != null && etaMs > 0 ? ` · ${formatHours(etaMs)}` : ''}
+        </Text>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -690,37 +749,46 @@ function HomeAnchor({
   );
 }
 
-// ── the moon card: every daily practice rides here ────────────────────────
-function DailiesCard({
-  visible,
+// ── the body card: every world of a cadence rides the same planet ────────
+function BodyCard({
+  bodyId,
   states,
   now,
   onClose,
   onOpenWorld,
 }: {
-  visible: boolean;
+  bodyId: BodyId | null;
   states: WorldState[];
   now: number;
   onClose: () => void;
   onOpenWorld: (id: number) => void;
 }) {
   const router = useRouter();
-  if (!visible) return null;
-  const dailies = states.filter((s) => s.body.id === 'moon');
+  if (!bodyId) return null;
+  const body = BODY_BY_ID[bodyId];
+  const dailies = states
+    .filter((s) => s.body.id === bodyId)
+    .sort((a, b) => Number(b.due) - Number(a.due) || a.dueTs - b.dueTs);
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.cardBackdrop} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
-          <Text style={styles.cardOverline}>THE MOON</Text>
-          <Text style={styles.cardName}>The dailies ride here</Text>
+          <Text style={styles.cardOverline}>{body.name.toUpperCase()}</Text>
+          <Text style={styles.cardName}>
+            {bodyId === 'moon'
+              ? 'The dailies ride here'
+              : `${dailies.length === 1 ? 'One world rides' : `${dailies.length} worlds ride`} this orbit`}
+          </Text>
           <Text style={styles.cardEpithet}>
-            Its phases were the first daily calendar anyone kept.
+            {bodyId === 'moon'
+              ? 'Its phases were the first daily calendar anyone kept.'
+              : `Every ${body.hours}-hour practice shares ${body.name}'s year.`}
           </Text>
 
           {dailies.length === 0 ? (
             <>
-              <Text style={styles.notDue}>No daily practices ride the Moon yet.</Text>
+              <Text style={styles.notDue}>{bodyId === 'moon' ? 'No daily practices ride the Moon yet.' : 'Nothing rides this orbit yet.'}</Text>
               <Pressable
                 style={styles.closeCta}
                 onPress={() => {
@@ -1412,6 +1480,25 @@ const styles = StyleSheet.create({
   farSide: {
     zIndex: 1,
   },
+  orbBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: palette.raised,
+    borderColor: palette.border,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  orbBadgeText: {
+    color: palette.text,
+    fontSize: 10,
+    fontWeight: '700',
+  },
   nearSide: {
     zIndex: 3,
   },
@@ -1419,6 +1506,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  formingLane: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  formingCaption: {
+    color: palette.textDim,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginTop: 2,
   },
   cometLane: {
     position: 'absolute',

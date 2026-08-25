@@ -17,7 +17,8 @@ export type GameEvent =
   | { type: 'titan_killed'; ts: number; habit: HabitId }
   | { type: 'titan_respawned'; ts: number; habit: HabitId }
   | { type: 'asteroid_deflected'; ts: number; asteroidId: number }
-  | { type: 'asteroid_struck'; ts: number; asteroidId: number };
+  | { type: 'asteroid_struck'; ts: number; asteroidId: number }
+  | { type: 'comet_struck_home'; ts: number; habit: HabitId; ark: number };
 
 export type GameEventType = GameEvent['type'];
 
@@ -28,6 +29,8 @@ export interface CometState {
   alive: boolean;
   /** volatiles spent — the nucleus is bare and perihelion will finish it */
   finisherReady: boolean;
+  /** mass at the ceiling — Earthfall is due and will materialize as an event */
+  impactReady: boolean;
 }
 
 export interface GameState {
@@ -44,11 +47,17 @@ export interface GameState {
   observationStreak: number;
 }
 
+export type ArkKeeper = 'noah' | 'brahma' | 'jesus';
+
 export interface ScheduleSettings {
   cadenceHours: number;
   dayStartHour: number;
   dayEndHour: number;
   habitsEnabled: Record<HabitId, boolean>;
+  /** who answers when the sky falls */
+  arkKeeper: ArkKeeper;
+  /** the population the keeper grants after an Earthfall */
+  arkSouls: number;
 }
 
 export interface PendingEncounter {

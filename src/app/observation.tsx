@@ -228,7 +228,7 @@ export default function ObservationScreen() {
       <Text style={styles.taunt}>“{def.taunt}”</Text>
       {!comet.alive && (
         <Text style={styles.held}>
-          Dispersed — the next fragment is inbound. The question stands.
+          Dispersed — the next fragment is forming out there. It eats what you do now.
         </Text>
       )}
       <Text style={styles.question}>{def.question}</Text>

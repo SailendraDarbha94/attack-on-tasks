@@ -8,6 +8,7 @@ const log = (returns: number, dispersed: number): Logbook => ({
   clean: 0,
   outbursts: 0,
   unobserved: 0,
+  impacts: 0,
   dispersed,
   returns,
   deflected: 0,

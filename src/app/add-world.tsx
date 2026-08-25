@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -211,11 +211,20 @@ function AsteroidForm() {
   // closeness, not blame: three days out reads calm, hours out reads hot
   const urgency = past ? 1 : Math.min(1, Math.max(0, 1 - msLeft / (3 * DAY_MS)));
 
+  const savingRef = useRef(false);
   const create = async () => {
-    if (!name.trim() || past || saving) return;
+    // the ref guards synchronously — two taps in one frame both read the
+    // state flag as false, and that race once minted twin asteroids
+    if (!name.trim() || past || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
-    await trackAsteroid(name, dueTs);
-    router.back();
+    try {
+      await trackAsteroid(name, dueTs);
+      router.back();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   return (

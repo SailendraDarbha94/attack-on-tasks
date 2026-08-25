@@ -24,6 +24,7 @@ describe('logbook', () => {
       returns: 1,
       deflected: 1,
       struck: 1,
+      impacts: 0,
     });
   });
 
@@ -37,6 +38,7 @@ describe('logbook', () => {
       returns: 0,
       deflected: 0,
       struck: 0,
+      impacts: 0,
     });
   });
 });

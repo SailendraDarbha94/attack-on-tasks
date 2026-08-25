@@ -178,6 +178,8 @@ describe('normalizeSettings', () => {
       dayStartHour: 25,
       dayEndHour: 3,
       habitsEnabled: { smoke: true, drink: true },
+      arkKeeper: 'noah' as const,
+      arkSouls: 1000,
     });
     expect(s.cadenceHours).toBe(1);
     expect(s.dayStartHour).toBe(22);

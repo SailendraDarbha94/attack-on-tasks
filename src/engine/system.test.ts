@@ -52,6 +52,7 @@ describe('spawn', () => {
         mass: SPAWN_MASS,
         alive: true,
         finisherReady: false,
+      impactReady: false,
       });
     }
     expect(state.light).toBe(0);

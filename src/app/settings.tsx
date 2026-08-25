@@ -3,10 +3,12 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { palette, spacing } from '@/constants/theme';
+import { KEEPER_IDS, KEEPERS } from '@/content/ark';
 import { COMETS } from '@/content/comets';
 import { HABITS } from '@/engine/system';
 import { useGame } from '@/state/game';
 
+const ARK_SIZES = [500, 1000, 2500, 5000];
 const CADENCES = [2, 3, 4, 6];
 
 export default function SettingsScreen() {
@@ -67,6 +69,37 @@ export default function SettingsScreen() {
       ))}
       <Text style={styles.hint}>
         Untracking a comet closes its windows — it neither brightens nor thins.
+      </Text>
+
+      <Text style={styles.sectionTitle}>The ark</Text>
+      <View style={styles.chips}>
+        {KEEPER_IDS.map((k) => (
+          <Pressable
+            key={k}
+            style={[styles.chip, settings.arkKeeper === k && styles.chipActive]}
+            onPress={() => updateSettings({ arkKeeper: k })}
+          >
+            <Text style={[styles.chipText, settings.arkKeeper === k && styles.chipTextActive]}>
+              {KEEPERS[k].name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.chips}>
+        {ARK_SIZES.map((n) => (
+          <Pressable
+            key={n}
+            style={[styles.chip, settings.arkSouls === n && styles.chipActive]}
+            onPress={() => updateSettings({ arkSouls: n })}
+          >
+            <Text style={[styles.chipText, settings.arkSouls === n && styles.chipTextActive]}>
+              {n.toLocaleString()}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.hint}>
+        If a comet ever makes Earthfall, this is who answers — and with how many souls.
       </Text>
     </SafeAreaView>
   );

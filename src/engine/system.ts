@@ -7,6 +7,10 @@ export const SPAWN_MASS = 100;
 export const MAX_MASS = 200;
 export const BARE_NUCLEUS_MASS = 10;
 export const BASE_ABLATION = 5;
+// An Earthfall fragment forms in the dark and eats what you do while it is
+// away — but it always comes back at least a core, and never already falling.
+export const FRAGMENT_MIN_MASS = 40;
+export const FRAGMENT_MAX_MASS = 180;
 
 // A dispersed comet is not the end of anything. Another fragment of the same
 // parent arrives three days later, which is how sungrazers work and how
@@ -57,7 +61,7 @@ export function applyAnswer(mass: number, answer: Answer, power: number): number
 }
 
 function spawnComet(habit: HabitId): CometState {
-  return { habit, mass: SPAWN_MASS, alive: true, finisherReady: false };
+  return { habit, mass: SPAWN_MASS, alive: true, finisherReady: false, impactReady: false };
 }
 
 export function initialState(): GameState {
@@ -100,9 +104,25 @@ export function reduceEvent(state: GameState, event: GameEvent): GameState {
         lastObservationTs: event.ts,
         observationStreak,
       };
-      if (!comet.alive) return next;
+      if (!comet.alive) {
+        // an honorably spent comet (mass 0) stays spent; a FALLEN one left a
+        // forming fragment out there, and it eats what you do while it forms
+        if (comet.mass <= 0) return next;
+        const forming = Math.min(
+          FRAGMENT_MAX_MASS,
+          Math.max(FRAGMENT_MIN_MASS, applyAnswer(comet.mass, event.answer, state.luminosity)),
+        );
+        return withComet(next, { ...comet, mass: forming });
+      }
       const mass = applyAnswer(comet.mass, event.answer, state.luminosity);
-      return withComet(next, { ...comet, mass, finisherReady: mass <= BARE_NUCLEUS_MASS });
+      return withComet(next, {
+        ...comet,
+        mass,
+        finisherReady: mass <= BARE_NUCLEUS_MASS,
+        // the ceiling is a threshold, not a wall: crossing it is Earthfall,
+        // which materializes as its own event
+        impactReady: mass >= MAX_MASS,
+      });
     }
     case 'chore_completed': {
       const light = state.light + LIGHT_RETURN;
@@ -114,8 +134,26 @@ export function reduceEvent(state: GameState, event: GameEvent): GameState {
     }
     case 'asteroid_struck': {
       // bounded: a strike leaves a crater in the record, never a hole in the
-      // will to keep going
-      return { ...state, population: Math.max(POPULATION_FLOOR, state.population - STRIKE_LOSS) };
+      // will to keep going — and after an Earthfall, when the world stands
+      // below the old floor, a strike must never HEAL it up to that floor
+      const floor = Math.min(POPULATION_FLOOR, state.population);
+      return { ...state, population: Math.max(floor, state.population - STRIKE_LOSS) };
+    }
+    case 'comet_struck_home': {
+      const comet = state.comets[event.habit];
+      if (!comet.alive) return state;
+      // Earthfall: the one loss the floor does not soften. The ark number is
+      // captured in the event itself, so history never re-reads settings.
+      return {
+        ...withComet(state, {
+          ...comet,
+          mass: SPAWN_MASS,
+          alive: false,
+          finisherReady: false,
+          impactReady: false,
+        }),
+        population: Math.max(1, event.ark),
+      };
     }
     case 'titan_killed': {
       // legacy event name, kept verbatim: it is written in the real log
@@ -127,7 +165,8 @@ export function reduceEvent(state: GameState, event: GameEvent): GameState {
     case 'titan_respawned': {
       const comet = state.comets[event.habit];
       if (comet.alive) return state;
-      return withComet(state, spawnComet(event.habit));
+      const mass = comet.mass > 0 ? comet.mass : SPAWN_MASS;
+      return withComet(state, { ...spawnComet(event.habit), mass });
     }
     case 'encounter_expired':
     case 'chore_skipped':
@@ -154,6 +193,7 @@ export interface Logbook {
   returns: number;
   deflected: number;
   struck: number;
+  impacts: number;
 }
 
 export function logbook(events: readonly GameEvent[]): Logbook {
@@ -165,6 +205,7 @@ export function logbook(events: readonly GameEvent[]): Logbook {
     dispersed: 0,
     returns: 0,
     deflected: 0,
+    impacts: 0,
     struck: 0,
   };
   for (const event of events) {
@@ -186,6 +227,9 @@ export function logbook(events: readonly GameEvent[]): Logbook {
       case 'asteroid_deflected':
         log.deflected += 1;
         break;
+      case 'comet_struck_home':
+        log.impacts += 1;
+        break;
       case 'asteroid_struck':
         log.struck += 1;
         break;
@@ -198,7 +242,8 @@ export function logbook(events: readonly GameEvent[]): Logbook {
 function openDispersals(events: readonly GameEvent[]): Map<HabitId, number> {
   const dispersed = new Map<HabitId, number>();
   for (const event of events) {
-    if (event.type === 'titan_killed') dispersed.set(event.habit, event.ts);
+    if (event.type === 'titan_killed' || event.type === 'comet_struck_home')
+      dispersed.set(event.habit, event.ts);
     else if (event.type === 'titan_respawned') dispersed.delete(event.habit);
   }
   return dispersed;
@@ -212,6 +257,32 @@ export function returnEvents(events: readonly GameEvent[], nowTs: number): GameE
     if (nowTs - dispersedTs >= RETURN_HOURS * HOUR) {
       out.push({ type: 'titan_respawned', ts: dispersedTs + RETURN_HOURS * HOUR, habit });
     }
+  }
+  return out;
+}
+
+/**
+ * Materialize Earthfalls: a comet whose mass sits at the ceiling strikes home.
+ * Folds the log incrementally so each impact lands at the moment of the
+ * answer that crossed the ceiling — idempotent, because the impact event
+ * itself clears the flag.
+ */
+export function impactEvents(events: readonly GameEvent[], arkSouls: number): GameEvent[] {
+  let state = initialState();
+  const crossedAt = new Map<HabitId, number>();
+  for (const event of [...events].sort((a, b) => a.ts - b.ts)) {
+    state = reduceEvent(state, event);
+    for (const comet of Object.values(state.comets)) {
+      if (comet.alive && comet.impactReady && !crossedAt.has(comet.habit)) {
+        crossedAt.set(comet.habit, event.ts);
+      } else if (!(comet.alive && comet.impactReady)) {
+        crossedAt.delete(comet.habit);
+      }
+    }
+  }
+  const out: GameEvent[] = [];
+  for (const [habit, ts] of crossedAt) {
+    out.push({ type: 'comet_struck_home', ts, habit, ark: arkSouls });
   }
   return out;
 }
