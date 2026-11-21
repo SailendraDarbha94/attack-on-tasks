@@ -3,6 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { BRAND, BRAND_MEANING, Logo } from "@/components/brand";
 import { ResetDemoButton } from "@/components/browser-app";
 import { buttonClass } from "@/components/classes";
+import { LegalLinks } from "@/components/legal";
 
 const STICKERS = [
   { emoji: "🍅", bg: "bg-lime", tilt: "-rotate-6" },
@@ -141,7 +142,10 @@ export default function LandingPage() {
             {BRAND_MEANING} Every shop, person and price in this {BRAND} demo is made up, and your changes stay in
             this browser.
           </p>
-          <ResetDemoButton />
+          <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2">
+            <LegalLinks />
+            <ResetDemoButton />
+          </div>
         </div>
       </footer>
     </>

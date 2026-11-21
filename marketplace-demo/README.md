@@ -57,6 +57,9 @@ There is no server and no database.
 - **The signed-in account and the cart** live in `sessionStorage`
   (`src/lib/session.ts`), which is why each tab is its own session.
 - **Payment** is a choice of label only. Nothing is charged.
+- **The Privacy Policy and Terms of Service** at `/privacy` and `/terms` are
+  placeholder text, labelled as such on the page and hidden from search
+  engines. Replace them with reviewed text before launch.
 
 ## Wiring up real sign-in later
 
@@ -78,6 +81,7 @@ Once data comes from a real backend:
 
 ```
 src/app/page.tsx                 landing page with the customer/store choice
+src/app/(legal)/privacy, terms   placeholder legal pages (replace before launch)
 src/app/(app)/login, signup      demo auth pages
 src/app/(app)/(customer)/...     shop, shop/[storeId], checkout, orders, account
 src/app/(app)/store/...          overview, orders, inventory, vendors

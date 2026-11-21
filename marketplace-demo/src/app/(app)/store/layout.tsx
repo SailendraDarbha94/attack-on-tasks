@@ -6,6 +6,7 @@ import { useMemo, type ReactNode } from "react";
 import { Boxes, ClipboardList, LayoutDashboard, LogOut, Truck, type LucideIcon } from "lucide-react";
 import { Logo, Splash } from "@/components/brand";
 import { ResetDemoButton } from "@/components/browser-app";
+import { LegalLinks } from "@/components/legal";
 import { StoreContext } from "@/components/store-context";
 import { cx, EmojiTile } from "@/components/ui";
 import { stockState, useDb } from "@/lib/db";
@@ -137,8 +138,9 @@ function Sidebar({ store, ownerName }: { store: Store; ownerName: string }) {
             Sign out
           </Link>
         </div>
-        <div className="hidden lg:block">
+        <div className="hidden gap-2 lg:grid">
           <ResetDemoButton onDark />
+          <LegalLinks onDark />
         </div>
       </div>
     </aside>

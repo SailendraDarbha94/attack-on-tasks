@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { LogOut, MapPin, ShoppingBasket } from "lucide-react";
 import { Logo, Splash } from "@/components/brand";
 import { ResetDemoButton } from "@/components/browser-app";
+import { LegalLinks } from "@/components/legal";
 import { cx } from "@/components/ui";
 import { useDeliveryAddress, useRequireRole } from "@/lib/hooks";
 import { cartCount, useCart } from "@/lib/session";
@@ -28,7 +29,10 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
       <footer className="border-t-2 border-ink/10">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-ink-soft sm:px-6">
           <p>Demo build. Shops, people and prices are made up.</p>
-          <ResetDemoButton />
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <LegalLinks />
+            <ResetDemoButton />
+          </div>
         </div>
       </footer>
     </div>

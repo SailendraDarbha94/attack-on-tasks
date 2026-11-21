@@ -8,6 +8,7 @@ import { homeFor } from "@/lib/auth";
 import { useAccount } from "@/lib/hooks";
 import type { Role } from "@/lib/types";
 import { Logo } from "./brand";
+import { LegalLinks } from "./legal";
 import { cx } from "./ui";
 
 const PANEL: Record<Role, { bg: string; emoji: string; headline: string; lines: string[] }> = {
@@ -87,6 +88,9 @@ export function AuthShell({ role, title, children }: { role: Role; title: string
             <Info className="mt-0.5 size-4 shrink-0" />
             Demo sign-in. Passwords are not checked or saved, and accounts live only in this browser. Real sign-in
             comes later.
+          </p>
+          <p className="mt-4">
+            <LegalLinks />
           </p>
         </div>
       </main>

@@ -71,6 +71,17 @@ function SignupForm({ role }: { role: Role }) {
         {pending ? "Creating account…" : role === "store" ? "Create store account" : "Create account"}
       </Button>
       <p className="text-sm text-ink-soft">
+        By creating an account you agree to the{" "}
+        <Link href="/terms" className="font-bold text-ink underline underline-offset-4">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="font-bold text-ink underline underline-offset-4">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+      <p className="text-sm text-ink-soft">
         Already have one?{" "}
         <Link href={`/login?role=${role}`} className="font-bold text-ink underline underline-offset-4">
           Sign in
