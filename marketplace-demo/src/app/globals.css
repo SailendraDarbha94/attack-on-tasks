@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* Bold and colourful: cream paper, aubergine ink, and produce-stall colours
+   with hard ink outlines and offset shadows. */
+@theme {
+  --color-ink: #1b1033;
+  --color-ink-soft: #5e5675;
+  --color-cream: #fff6e5;
+  --color-paper: #ffffff;
+  --color-line: #eadfcb;
+
+  --color-tomato: #ff5533;
+  --color-tomato-soft: #ffd9cf;
+  --color-lime: #c8f03c;
+  --color-mango: #ffbe2e;
+  --color-mango-soft: #ffe9b0;
+  --color-mint: #2fd6a0;
+  --color-mint-soft: #c9f5e6;
+  --color-berry: #f2568b;
+  --color-berry-soft: #fdd3e1;
+  --color-sky: #54c7f5;
+  --color-sky-soft: #d3effc;
+  --color-grape: #7c5cff;
+  --color-grape-soft: #e2dbff;
+
+  --shadow-hard-sm: 2px 2px 0 0 var(--color-ink);
+  --shadow-hard: 4px 4px 0 0 var(--color-ink);
+  --shadow-hard-lg: 8px 8px 0 0 var(--color-ink);
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+button:not(:disabled),
+[role="tab"] {
+  cursor: pointer;
+}
