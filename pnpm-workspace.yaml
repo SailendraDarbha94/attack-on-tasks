@@ -1,0 +1,17 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 10 blocks dependency install scripts by default. Only these may run.
+onlyBuiltDependencies:
+  - esbuild
+  - prisma
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "@nestjs/core"
+
+# These have install scripts we do not need (prebuilt binaries cover them).
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+  - "@scarf/scarf"

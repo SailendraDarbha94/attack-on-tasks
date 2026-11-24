@@ -1,0 +1,12 @@
+:root {
+  --font-display:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Noto Color Emoji';
+  --font-rounded: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+html,
+body {
+  background-color: #fffbf4;
+}

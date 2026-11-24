@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  customer
+  store
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum OrderStatus {
+  placed
+  accepted
+  ready
+  out_for_delivery
+  delivered
+  rejected
+  cancelled
+}
+
+enum PaymentMethod {
+  cash
+  upi
+}
+
+/// Money is integer paise everywhere.
+
+model User {
+  /// The auth subject. With Supabase Auth this mirrors auth.users.id.
+  id        String     @id @db.Uuid
+  role      Role       @default(customer)
+  status    UserStatus @default(active)
+  name      String
+  email     String     @unique
+  phone     String?
+  /// Store accounts only: the store this person works at.
+  storeId   String?    @db.Uuid
+  store     Store?     @relation(fields: [storeId], references: [id])
+  addresses Address[]
+  orders    Order[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model Store {
+  id                     String         @id @default(uuid()) @db.Uuid
+  name                   String
+  area                   String
+  addressText            String
+  phone                  String
+  lat                    Float
+  lng                    Float
+  isOpen                 Boolean        @default(true)
+  deliveryRadiusM        Int            @default(4500)
+  deliveryFeePaise       Int            @default(2500)
+  /// Null means delivery is never free.
+  freeDeliveryAbovePaise Int?
+  minOrderPaise          Int            @default(9900)
+  prepMinutes            Int            @default(8)
+  staff                  User[]
+  inventory              StoreProduct[]
+  orders                 Order[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@map("stores")
+}
+
+model Category {
+  id       String    @id @default(uuid()) @db.Uuid
+  slug     String    @unique
+  name     String
+  emoji    String
+  sort     Int
+  products Product[]
+
+  @@map("categories")
+}
+
+/// The shared catalogue. A store sells a product by having a StoreProduct row.
+model Product {
+  id          String         @id @default(uuid()) @db.Uuid
+  categoryId  String         @db.Uuid
+  category    Category       @relation(fields: [categoryId], references: [id])
+  name        String
+  unitLabel   String
+  emoji       String
+  description String?
+  mrpPaise    Int
+  isActive    Boolean        @default(true)
+  inventory   StoreProduct[]
+  createdAt   DateTime       @default(now())
+
+  @@unique([name, unitLabel])
+  @@map("products")
+}
+
+/// One product on one store's shelf: its price there and how many are left.
+model StoreProduct {
+  storeId     String   @db.Uuid
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId   String   @db.Uuid
+  product     Product  @relation(fields: [productId], references: [id])
+  pricePaise  Int
+  stock       Int      @default(0)
+  /// Off hides the product from customers without losing its price and stock.
+  isAvailable Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@id([storeId, productId])
+  @@map("store_products")
+}
+
+model Address {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  line1     String
+  line2     String?
+  landmark  String?
+  area      String
+  city      String   @default("Bengaluru")
+  pincode   String
+  lat       Float
+  lng       Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Order {
+  id               String        @id @default(uuid()) @db.Uuid
+  shortCode        String        @unique
+  customerId       String        @db.Uuid
+  customer         User          @relation(fields: [customerId], references: [id])
+  storeId          String        @db.Uuid
+  store            Store         @relation(fields: [storeId], references: [id])
+  status           OrderStatus   @default(placed)
+  subtotalPaise    Int
+  deliveryFeePaise Int
+  totalPaise       Int
+  paymentMethod    PaymentMethod
+  /// Where it goes, copied from the address when the order is placed, so
+  /// editing or deleting the address later cannot change a past order.
+  dropoffName      String
+  dropoffPhone     String?
+  dropoffText      String
+  dropoffLat       Float
+  dropoffLng       Float
+  notes            String?
+  idempotencyKey   String
+  placedAt         DateTime      @default(now())
+  acceptedAt       DateTime?
+  readyAt          DateTime?
+  dispatchedAt     DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  items            OrderItem[]
+  events           OrderEvent[]
+
+  @@unique([customerId, idempotencyKey])
+  @@index([customerId, placedAt])
+  @@index([storeId, status])
+  @@map("orders")
+}
+
+/// Name and price are copied in, so an order never changes when the catalogue does.
+model OrderItem {
+  id             String @id @default(uuid()) @db.Uuid
+  orderId        String @db.Uuid
+  order          Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String @db.Uuid
+  name           String
+  unitLabel      String
+  emoji          String
+  unitPricePaise Int
+  qty            Int
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Append-only record of every status change.
+model OrderEvent {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @db.Uuid
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actorId    String?      @db.Uuid
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId])
+  @@map("order_events")
+}
